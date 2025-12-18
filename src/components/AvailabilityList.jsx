@@ -1,5 +1,3 @@
-import React from "react";
-
 const dayMap = {
   0: "Sunday",
   1: "Monday",
@@ -10,7 +8,7 @@ const dayMap = {
   6: "Saturday",
 };
 
-const AvailabilityList = ({ data }) => {
+const AvailabilityList = ({ data, onDelete }) => {
   if (!data || data.length === 0) {
     return <p>No availability slots added yet.</p>;
   }
@@ -22,6 +20,7 @@ const AvailabilityList = ({ data }) => {
           <th align="left">Day</th>
           <th align="left">Start Time</th>
           <th align="left">End Time</th>
+          {onDelete && <th></th>}
         </tr>
       </thead>
       <tbody>
@@ -30,6 +29,13 @@ const AvailabilityList = ({ data }) => {
             <td>{dayMap[slot.dayOfWeek]}</td>
             <td>{slot.startTime}</td>
             <td>{slot.endTime}</td>
+            {onDelete && (
+              <td>
+                <button onClick={() => onDelete(slot._id)}>
+                  Delete
+                </button>
+              </td>
+            )}
           </tr>
         ))}
       </tbody>
