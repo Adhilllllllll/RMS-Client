@@ -36,18 +36,32 @@ const AdminDashboard = () => {
 
       {counts && (
         <div style={{ display: "flex", gap: "16px" }}>
-          <div><b>Students:</b> {counts.students}</div>
-          <div><b>Reviewers:</b> {counts.reviewers}</div>
-          <div><b>Advisors:</b> {counts.advisors}</div>
+          <div>
+            <b>Students:</b> {counts.students}
+          </div>
+          <div>
+            <b>Reviewers:</b> {counts.reviewers}
+          </div>
+          <div>
+            <b>Advisors:</b> {counts.advisors}
+          </div>
         </div>
       )}
 
       <hr />
 
       <div style={{ display: "flex", gap: "12px" }}>
-        <button>Create User</button>
-        <button>Create Student</button>
-        <button>View Availability</button>
+        <button onClick={() => navigate("/admin/create-user")}>
+          Create User
+        </button>
+
+        <button onClick={() => navigate("/admin/create-student")}>
+          Create Student
+        </button>
+
+        <button onClick={() => navigate("/admin/availability")}>
+          View Availability
+        </button>
       </div>
     </div>
   );

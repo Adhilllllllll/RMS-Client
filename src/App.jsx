@@ -6,6 +6,9 @@ import Login from "./pages/Login";
 import StudentDashboard from "./pages/dashboards/StudentDashboard";
 import AdvisorDashboard from "./pages/dashboards/AdvisorDashboard";
 import { useSelector } from "react-redux";
+ import AdminCreateUser from "./pages/admin/AdminCreateUser";
+import AdminCreateStudent from "./pages/admin/AdminCreateStudent";
+
 
 function App() {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -52,6 +55,24 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+  path="/admin/create-user"
+  element={
+    <ProtectedRoute role="admin">
+      <AdminCreateUser />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/create-student"
+  element={
+    <ProtectedRoute role="admin">
+      <AdminCreateStudent />
+    </ProtectedRoute>
+  }
+/>
 
         {/* REVIEWER */}
         <Route
