@@ -59,7 +59,7 @@ const AdminCreateStudent = () => {
       });
 
       alert("Student created successfully");
-      navigate("/admin/dashboard");
+      navigate("/admin/dashboard", { replace: true });
     } catch (err) {
       setError(
         err?.response?.data?.message || "Failed to create student"

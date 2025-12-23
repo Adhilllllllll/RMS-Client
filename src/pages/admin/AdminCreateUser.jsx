@@ -37,7 +37,7 @@ const AdminCreateUser = () => {
       });
 
       alert("User created successfully");
-      navigate("/admin/dashboard");
+      navigate("/admin/dashboard", { replace: true });
     } catch (err) {
       setError(
         err?.response?.data?.message || "Failed to create user"

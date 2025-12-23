@@ -11,7 +11,7 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
   const { counts, loading, error } = useSelector((s) => s.admin);
 
