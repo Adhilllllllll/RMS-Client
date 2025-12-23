@@ -1,16 +1,126 @@
-# React + Vite
+# Review Management System (RMS)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
+The Review Management System (RMS) is a role-based web application built using the MERN stack.  
+It simplifies the process of managing student reviews by enabling structured interaction between admins, advisors, reviewers, and students.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Tech Stack
+Frontend:
+- React
+- Redux Toolkit
+- React Router
+- Axios
 
-## React Compiler
+Backend:
+- Node.js
+- Express.js
+- MongoDB
+- JWT Authentication
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Architecture:
+- Modular Monolith
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## User Roles
+- Admin
+- Advisor
+- Reviewer
+- Student
+
+Each role has a dedicated dashboard and access control.
+
+---
+
+## Features
+
+### Authentication & Authorization
+- JWT-based authentication
+- Role-based routing
+- Protected routes
+- Secure login and logout
+
+---
+
+### Reviewer Module (Implemented)
+- Reviewer dashboard
+- Add availability slots (day, start time, end time)
+- View availability
+- Delete availability
+- Real-time UI updates using Redux
+
+---
+
+### Student Module (MVP)
+- Student dashboard
+- Profile information
+- Advisor section (placeholder)
+- Upcoming reviews (placeholder)
+- Feedback section (placeholder)
+
+---
+
+### Advisor Module (MVP)
+- Advisor dashboard
+- Profile information
+- Assigned students (placeholder)
+- Upcoming reviews (placeholder)
+- Feedback overview (placeholder)
+
+---
+
+### Admin Module
+- Admin dashboard
+- User management foundation
+- Future scope: analytics and system monitoring
+
+---
+
+## Frontend Folder Structure
+
+src/
+- api/
+- app/
+- components/
+- features/
+  - auth/
+  - availability/
+  - advisor/
+  - student/
+  - admin/
+- pages/
+  - dashboards/
+- utils/
+
+---
+
+## Backend Highlights
+- Separate collections for users and students
+- Role-based access control
+- Modular routing
+- Secure password handling
+- Reviewer availability APIs
+
+---
+
+## Future Enhancements
+- Review scheduling system
+- Feedback and scoring
+- Real-time chat
+- Video review sessions (WebRTC)
+- Analytics dashboard
+
+---
+
+## Status
+✔ Authentication complete  
+✔ Role-based dashboards implemented  
+✔ Reviewer availability fully functional  
+✔ MVP ready and demo-ready  
+
+---
+
+## Author
+Developed as part of a full-stack MERN project with focus on clean architecture and scalability.
