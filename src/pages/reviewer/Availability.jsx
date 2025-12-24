@@ -7,11 +7,32 @@ import {
 } from "../../features/availability/availabilitySlice";
 import Loader from "../../components/Loader";
 
+// Map day names to numbers (backend expects 0-6)
+const DAYS = [
+    { value: 0, label: "Sunday" },
+    { value: 1, label: "Monday" },
+    { value: 2, label: "Tuesday" },
+    { value: 3, label: "Wednesday" },
+    { value: 4, label: "Thursday" },
+    { value: 5, label: "Friday" },
+    { value: 6, label: "Saturday" },
+];
+
+// Convert 24h time (HH:MM) to 12h format with AM/PM
+const formatTime = (time) => {
+    if (!time) return "";
+    const [hours, minutes] = time.split(":");
+    const h = parseInt(hours, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+};
+
 const Availability = () => {
     const dispatch = useDispatch();
     const { list, loading } = useSelector((state) => state.availability);
     const [formData, setFormData] = useState({
-        day: "Monday",
+        dayOfWeek: 1, // Default to Monday
         startTime: "",
         endTime: "",
     });
@@ -21,7 +42,11 @@ const Availability = () => {
     }, [dispatch]);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: name === "dayOfWeek" ? Number(value) : value
+        });
     };
 
     const handleSubmit = (e) => {
@@ -52,8 +77,8 @@ const Availability = () => {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Day</label>
-                                <select name="day" value={formData.day} onChange={handleChange} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(d => <option key={d} value={d}>{d}</option>)}
+                                <select name="dayOfWeek" value={formData.dayOfWeek} onChange={handleChange} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none">
+                                    {DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                                 </select>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -95,9 +120,9 @@ const Availability = () => {
                                         <tbody className="divide-y divide-slate-100">
                                             {list.map((slot) => (
                                                 <tr key={slot._id} className="hover:bg-slate-50">
-                                                    <td className="px-6 py-4 font-medium text-slate-900">{slot.day}</td>
-                                                    <td className="px-6 py-4 text-slate-600">{slot.startTime}</td>
-                                                    <td className="px-6 py-4 text-slate-600">{slot.endTime}</td>
+                                                    <td className="px-6 py-4 font-medium text-slate-900">{DAYS.find(d => d.value === slot.dayOfWeek)?.label || slot.dayOfWeek}</td>
+                                                    <td className="px-6 py-4 text-slate-600">{formatTime(slot.startTime)}</td>
+                                                    <td className="px-6 py-4 text-slate-600">{formatTime(slot.endTime)}</td>
                                                     <td className="px-6 py-4 text-right">
                                                         <button onClick={() => handleDelete(slot._id)} className="text-red-500 hover:text-red-700 font-medium text-xs bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition-colors">
                                                             Delete

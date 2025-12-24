@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
@@ -13,15 +13,22 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { loading, error } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, loading, error } = useSelector((state) => state.auth);
 
   const navigateToDashboard = (role) => {
-    if (role === "admin") navigate("/admin/dashboard");
-    else if (role === "reviewer") navigate("/reviewer/dashboard");
-    else if (role === "student") navigate("/student/dashboard");
-    else if (role === "advisor") navigate("/advisor/dashboard");
-    else navigate("/");
+    if (role === "admin") navigate("/admin/dashboard", { replace: true });
+    else if (role === "reviewer") navigate("/reviewer/dashboard", { replace: true });
+    else if (role === "student") navigate("/student/dashboard", { replace: true });
+    else if (role === "advisor") navigate("/advisor/dashboard", { replace: true });
+    else navigate("/", { replace: true });
   };
+
+  // Redirect authenticated users away from login page
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigateToDashboard(user.role);
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
