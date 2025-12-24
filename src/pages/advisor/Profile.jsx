@@ -1,77 +1,443 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useState, useEffect, useRef } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { logout } from "../../features/auth/authSlice";
+import api from "../../api/axios";
 
 const Profile = () => {
     const { user } = useSelector((state) => state.auth);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const fileInputRef = useRef(null);
+
+    // Profile state
+    const [profile, setProfile] = useState({
+        name: "",
+        email: "",
+        domain: "",
+        phone: "",
+        about: "",
+        avatar: "",
+    });
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [successMsg, setSuccessMsg] = useState("");
+    const [errorMsg, setErrorMsg] = useState("");
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState("");
+
+    // Password state
+    const [passwords, setPasswords] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+    });
+    const [showPasswords, setShowPasswords] = useState({
+        current: false,
+        new: false,
+        confirm: false,
+    });
+    const [passwordSaving, setPasswordSaving] = useState(false);
+    const [passwordSuccess, setPasswordSuccess] = useState("");
+    const [passwordError, setPasswordError] = useState("");
+
+    // Fetch profile on mount
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get("/advisor/me");
+            const advisor = res.data.advisor;
+            setProfile({
+                name: advisor.name || "",
+                email: advisor.email || "",
+                domain: advisor.domain || "",
+                phone: advisor.phone || "",
+                about: advisor.about || "",
+                avatar: advisor.avatar || "",
+            });
+            if (advisor.avatar) {
+                setAvatarPreview(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${advisor.avatar}`);
+            }
+        } catch (err) {
+            setErrorMsg("Failed to load profile");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Clear messages
+    useEffect(() => {
+        if (successMsg) {
+            const timer = setTimeout(() => setSuccessMsg(""), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMsg]);
+
+    useEffect(() => {
+        if (passwordSuccess) {
+            const timer = setTimeout(() => setPasswordSuccess(""), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [passwordSuccess]);
+
+    // Handle profile field change
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setProfile(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Handle avatar change
+    const handleAvatarChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                setErrorMsg("Image size must be less than 2MB");
+                return;
+            }
+            setAvatarFile(file);
+            setAvatarPreview(URL.createObjectURL(file));
+        }
+    };
+
+    // Save profile
+    const handleSaveProfile = async (e) => {
+        e.preventDefault();
+        setErrorMsg("");
+
+        if (!profile.name.trim()) {
+            setErrorMsg("Name is required");
+            return;
+        }
+
+        try {
+            setSaving(true);
+            const formData = new FormData();
+            formData.append("name", profile.name);
+            formData.append("phone", profile.phone);
+            formData.append("about", profile.about);
+            if (avatarFile) {
+                formData.append("avatar", avatarFile);
+            }
+
+            await api.put("/advisor/me", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            setSuccessMsg("Profile updated successfully!");
+            setAvatarFile(null);
+        } catch (err) {
+            setErrorMsg(err.response?.data?.message || "Failed to update profile");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Handle password field change
+    const handlePasswordChange = (e) => {
+        const { name, value } = e.target;
+        setPasswords(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Change password
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        setPasswordError("");
+
+        if (!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword) {
+            setPasswordError("All fields are required");
+            return;
+        }
+
+        if (passwords.newPassword.length < 8) {
+            setPasswordError("Password must be at least 8 characters");
+            return;
+        }
+
+        if (passwords.newPassword !== passwords.confirmPassword) {
+            setPasswordError("Passwords do not match");
+            return;
+        }
+
+        try {
+            setPasswordSaving(true);
+            await api.post("/auth/change-password", {
+                email: profile.email,
+                oldPassword: passwords.currentPassword,
+                newPassword: passwords.newPassword,
+            });
+
+            setPasswordSuccess("Password changed successfully!");
+            setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        } catch (err) {
+            setPasswordError(err.response?.data?.message || "Failed to change password");
+        } finally {
+            setPasswordSaving(false);
+        }
+    };
+
+    // Logout
+    const handleLogout = () => {
+        dispatch(logout());
+        navigate("/login");
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Advisor Profile</h2>
+        <div className="max-w-3xl mx-auto space-y-6">
+            {/* Header */}
+            <div>
+                <h2 className="text-2xl font-bold text-slate-900">Profile</h2>
+                <p className="text-slate-500">Manage your account information</p>
+            </div>
 
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-8">
-                <div className="relative">
-                    <div className="w-32 h-32 rounded-full bg-green-100 flex items-center justify-center text-4xl font-bold text-green-600 border-4 border-white shadow-md">
-                        {user?.name?.charAt(0) || "A"}
+            {/* Profile Picture Section */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 className="font-semibold text-slate-900 mb-4">Profile Picture</h3>
+                <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-full bg-green-600 text-white flex items-center justify-center text-2xl font-bold overflow-hidden">
+                        {avatarPreview ? (
+                            <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                            profile.name?.charAt(0)?.toUpperCase() || "A"
+                        )}
                     </div>
-                    <button className="absolute bottom-0 right-0 bg-green-600 text-white p-2 rounded-full shadow-lg hover:bg-green-700 transition-colors">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    </button>
-                </div>
-                <div className="text-center md:text-left space-y-2">
-                    <h3 className="text-2xl font-bold text-slate-900">{user?.name}</h3>
-                    <p className="text-slate-500 font-medium">{user?.email}</p>
-                    <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                        {user?.role}
-                    </span>
+                    <div>
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                        >
+                            Upload Photo
+                        </button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                        />
+                        <p className="text-xs text-slate-400 mt-1">JPG, PNG or GIF. Max size 2MB.</p>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2 space-y-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                            <span className="p-1.5 bg-green-50 text-green-600 rounded-lg"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></span>
-                            Professional Info
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-500 uppercase">Full Name</label>
-                                <input type="text" value={user?.name || ""} readOnly className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-500 uppercase">Email Address</label>
-                                <input type="email" value={user?.email || ""} readOnly className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-500 uppercase">Department</label>
-                                <input type="text" defaultValue="Computer Science" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-500 uppercase">Office Hours</label>
-                                <input type="text" defaultValue="Mon-Wed 10-12" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500" />
-                            </div>
-                        </div>
-                        <div className="mt-6 flex justify-end">
-                            <button className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors">
-                                Save Profile
+            {/* Personal Information */}
+            <form onSubmit={handleSaveProfile} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 className="font-semibold text-slate-900 mb-4">Personal Information</h3>
+
+                {/* Success/Error Messages */}
+                {successMsg && (
+                    <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm">
+                        {successMsg}
+                    </div>
+                )}
+                {errorMsg && (
+                    <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm">
+                        {errorMsg}
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    {/* Full Name */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                        <input
+                            type="text"
+                            name="name"
+                            value={profile.name}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                    </div>
+
+                    {/* Email (read-only) */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                        <input
+                            type="email"
+                            value={profile.email}
+                            readOnly
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 cursor-not-allowed"
+                        />
+                        <p className="text-xs text-slate-400 mt-1">Email cannot be changed</p>
+                    </div>
+
+                    {/* Domain (read-only) */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Domain</label>
+                        <input
+                            type="text"
+                            value={profile.domain || "Not assigned"}
+                            readOnly
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 cursor-not-allowed"
+                        />
+                        <p className="text-xs text-slate-400 mt-1">Domain is managed by Admin</p>
+                    </div>
+
+                    {/* Phone Number */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={profile.phone}
+                            onChange={handleChange}
+                            placeholder="+1 (555) 123-4567"
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                    </div>
+
+                    {/* About */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">About</label>
+                        <textarea
+                            name="about"
+                            value={profile.about}
+                            onChange={handleChange}
+                            rows={4}
+                            placeholder="Tell us about yourself..."
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                        />
+                    </div>
+
+                    {/* Save Button */}
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+
+            {/* Change Password */}
+            <form onSubmit={handleChangePassword} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 className="font-semibold text-slate-900 mb-4">Change Password</h3>
+
+                {/* Success/Error Messages */}
+                {passwordSuccess && (
+                    <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm">
+                        {passwordSuccess}
+                    </div>
+                )}
+                {passwordError && (
+                    <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm">
+                        {passwordError}
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    {/* Current Password */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Current Password</label>
+                        <div className="relative">
+                            <input
+                                type={showPasswords.current ? "text" : "password"}
+                                name="currentPassword"
+                                value={passwords.currentPassword}
+                                onChange={handlePasswordChange}
+                                placeholder="Enter current password"
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 pr-10"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    {showPasswords.current ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                    ) : (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    )}
+                                </svg>
                             </button>
                         </div>
                     </div>
-                </div>
 
-                <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <h4 className="font-bold text-slate-900 mb-4">Account Actions</h4>
-                        <button className="w-full text-left p-2 hover:bg-slate-50 rounded-lg text-sm font-medium text-slate-600 transition-colors flex justify-between">
-                            Sync Calendar <span className="text-green-600">On</span>
-                        </button>
-                        <button className="w-full text-left p-2 hover:bg-slate-50 rounded-lg text-sm font-medium text-red-600 transition-colors">
-                            Sign Out All Devices
-                        </button>
+                    {/* New Password */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+                        <div className="relative">
+                            <input
+                                type={showPasswords.new ? "text" : "password"}
+                                name="newPassword"
+                                value={passwords.newPassword}
+                                onChange={handlePasswordChange}
+                                placeholder="Enter new password"
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 pr-10"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    {showPasswords.new ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                    ) : (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    )}
+                                </svg>
+                            </button>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">Password must be at least 8 characters</p>
                     </div>
+
+                    {/* Confirm Password */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Confirm New Password</label>
+                        <div className="relative">
+                            <input
+                                type={showPasswords.confirm ? "text" : "password"}
+                                name="confirmPassword"
+                                value={passwords.confirmPassword}
+                                onChange={handlePasswordChange}
+                                placeholder="Confirm new password"
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 pr-10"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    {showPasswords.confirm ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                    ) : (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    )}
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Update Password Button */}
+                    <button
+                        type="submit"
+                        disabled={passwordSaving}
+                        className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {passwordSaving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                        Update Password
+                    </button>
                 </div>
-            </div>
+            </form>
         </div>
     );
 };
+
 export default Profile;
