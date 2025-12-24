@@ -33,6 +33,7 @@ import AdvisorCalendar from "./pages/advisor/Calendar";
 import AdvisorNotes from "./pages/advisor/NotesTemplates";
 import AdvisorAnalytics from "./pages/advisor/ReportsAnalytics";
 import AdvisorProfile from "./pages/advisor/Profile";
+import AdvisorChat from "./pages/advisor/Chat";
 import { useSelector } from "react-redux";
 
 function App() {
@@ -350,6 +351,16 @@ function App() {
             <ProtectedRoute role="advisor">
               <Layout>
                 <AdvisorCalendar />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/advisor/chat"
+          element={
+            <ProtectedRoute role="advisor">
+              <Layout>
+                <AdvisorChat />
               </Layout>
             </ProtectedRoute>
           }
