@@ -29,13 +29,21 @@ export const refreshUser = createAsyncThunk(
       const role = state.auth.user?.role;
 
       // Call appropriate profile endpoint based on role
-      let endpoint = "/auth/me"; // Default fallback
+      let endpoint = null;
       if (role === "advisor") {
         endpoint = "/advisor/me";
       } else if (role === "reviewer") {
         endpoint = "/reviews/reviewer/profile";
       } else if (role === "admin") {
         endpoint = "/admin/me";
+      } else if (role === "student") {
+        // Students don't have a profile refresh endpoint yet
+        // Just return current user data
+        return thunkAPI.getState().auth.user;
+      }
+
+      if (!endpoint) {
+        return thunkAPI.getState().auth.user;
       }
 
       const res = await api.get(endpoint);

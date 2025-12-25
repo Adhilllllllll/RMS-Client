@@ -4,6 +4,7 @@ import availabilityReducer from "../features/availability/availabilitySlice";
 import adminReducer from "../features/admin/adminSlice";
 import advisorReducer from "../features/advisor/advisorSlice";
 import reviewerReducer from "../features/reviewer/reviewerSlice";
+import studentReducer from "../features/student/studentSlice";
 
 
 export const store = configureStore({
@@ -13,6 +14,7 @@ export const store = configureStore({
     admin: adminReducer,
     advisor: advisorReducer,
     reviewer: reviewerReducer,
+    student: studentReducer,
   },
 });
 
