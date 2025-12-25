@@ -3,6 +3,7 @@ import authReducer from "../features/auth/authSlice";
 import availabilityReducer from "../features/availability/availabilitySlice";
 import adminReducer from "../features/admin/adminSlice";
 import advisorReducer from "../features/advisor/advisorSlice";
+import reviewerReducer from "../features/reviewer/reviewerSlice";
 
 
 export const store = configureStore({
@@ -11,6 +12,7 @@ export const store = configureStore({
     availability: availabilityReducer,
     admin: adminReducer,
     advisor: advisorReducer,
+    reviewer: reviewerReducer,
   },
 });
 

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ReviewerDashboard from "./pages/dashboards/ReviewerDashboard";
@@ -34,10 +35,19 @@ import AdvisorNotes from "./pages/advisor/NotesTemplates";
 import AdvisorAnalytics from "./pages/advisor/ReportsAnalytics";
 import AdvisorProfile from "./pages/advisor/Profile";
 import AdvisorChat from "./pages/advisor/Chat";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { refreshUser } from "./features/auth/authSlice";
 
 function App() {
+  const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  // Refresh user profile from backend on app load
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      dispatch(refreshUser());
+    }
+  }, [isAuthenticated, dispatch]);
 
   return (
     <BrowserRouter

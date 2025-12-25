@@ -124,9 +124,21 @@ const Profile = () => {
                 formData.append("avatar", avatarFile);
             }
 
-            await api.put("/advisor/me", formData, {
+            const res = await api.put("/advisor/me", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
+
+            // Update avatar preview with permanent URL from backend
+            if (res.data.advisor?.avatar) {
+                // Revoke old blob URL to prevent memory leak
+                if (avatarPreview && avatarPreview.startsWith("blob:")) {
+                    URL.revokeObjectURL(avatarPreview);
+                }
+                // Set permanent URL from backend
+                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                setAvatarPreview(`${baseUrl}${res.data.advisor.avatar}`);
+                setProfile(prev => ({ ...prev, avatar: res.data.advisor.avatar }));
+            }
 
             setSuccessMsg("Profile updated successfully!");
             setAvatarFile(null);
