@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ReviewerDashboard from "./pages/dashboards/ReviewerDashboard";
 import AdminDashboard from "./pages/dashboards/AdminDashboard";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import StudentDashboard from "./pages/dashboards/StudentDashboard";
 import AdvisorDashboard from "./pages/dashboards/AdvisorDashboard";
 import ManageUsers from "./pages/admin/ManageUsers";
@@ -12,6 +13,7 @@ import RecentActivity from "./pages/admin/RecentActivity";
 import ReviewStatus from "./pages/admin/ReviewStatus";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
+import AdminNotifications from "./pages/admin/Notifications";
 import Reviews from "./pages/student/Reviews";
 import Progress from "./pages/student/Progress";
 import Tasks from "./pages/student/Tasks";
@@ -79,8 +81,9 @@ function App() {
           }
         />
 
-        {/* LOGIN */}
+        {/* LOGIN & AUTH */}
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* ADMIN */}
         <Route
@@ -135,6 +138,16 @@ function App() {
             <ProtectedRoute role="admin">
               <Layout>
                 <Settings />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/notifications"
+          element={
+            <ProtectedRoute role="admin">
+              <Layout>
+                <AdminNotifications />
               </Layout>
             </ProtectedRoute>
           }

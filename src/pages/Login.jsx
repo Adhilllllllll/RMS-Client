@@ -3,11 +3,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
 import ChangePasswordModal from "../components/ChangePasswordModal";
+import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [pendingUser, setPendingUser] = useState(null);
 
   const dispatch = useDispatch();
@@ -67,6 +69,10 @@ const Login = () => {
         userEmail={email}
         onSuccess={handlePasswordChanged}
       />
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-900 transition-colors duration-300">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8 sm:p-10">
           <div className="mb-8 text-center">
@@ -113,6 +119,15 @@ const Login = () => {
                 className="block w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 focus:bg-white focus:outline-none transition-all duration-200 sm:text-sm"
                 required
               />
+              <div className="mt-1 text-right">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm text-gray-500 hover:text-black hover:underline transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
 
             <button

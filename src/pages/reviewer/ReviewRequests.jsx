@@ -210,8 +210,12 @@ const ReviewRequests = () => {
                                             <div className="text-slate-900">{formatDate(request.scheduledAt)}</div>
                                             <div className="text-xs text-slate-500">{formatTime(request.scheduledAt)}</div>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-600">
-                                            {request.advisor?.domain || "General"}
+                                        <td className="px-6 py-4">
+                                            {request.advisor?.domain ? (
+                                                <span className="text-slate-700">{request.advisor.domain}</span>
+                                            ) : (
+                                                <span className="text-slate-400 italic">Not specified</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useDispatch } from "react-redux";
+import { updateUser } from "../../features/auth/authSlice";
 import api from "../../api/axios";
 import {
     getMyReviewerProfile,
@@ -7,6 +9,7 @@ import {
 } from "../../features/reviewer/reviewerApi";
 
 const Profile = () => {
+    const dispatch = useDispatch();
     const fileInputRef = useRef(null);
 
     // Profile state
@@ -159,6 +162,9 @@ const Profile = () => {
 
             setSuccessMsg("Profile updated successfully!");
             setAvatarFile(null);
+
+            // Update Redux state so header name updates dynamically
+            dispatch(updateUser({ name: profile.name }));
         } catch (err) {
             setErrorMsg(err.response?.data?.message || "Failed to update profile");
         } finally {

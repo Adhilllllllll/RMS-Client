@@ -48,10 +48,9 @@ const History = () => {
         return reviews.filter(r => r.status === "completed");
     }, [reviews]);
 
-    // Get unique domains for filter dropdown
     const availableDomains = useMemo(() => {
         const domains = completedReviews
-            .map(r => r.advisor?.domain || "General")
+            .map(r => r.advisor?.domain || "Not specified")
             .filter((v, i, arr) => arr.indexOf(v) === i);
         return domains.sort();
     }, [completedReviews]);
@@ -68,10 +67,9 @@ const History = () => {
             );
         }
 
-        // Filter by domain
         if (domainFilter) {
             result = result.filter(r =>
-                (r.advisor?.domain || "General") === domainFilter
+                (r.advisor?.domain || "Not specified") === domainFilter
             );
         }
 
@@ -200,7 +198,11 @@ const History = () => {
                                         {formatDate(review.scheduledAt)}
                                     </td>
                                     <td className="px-6 py-4 text-slate-600">
-                                        {review.advisor?.domain || "General"}
+                                        {review.advisor?.domain ? (
+                                            <span className="text-slate-700">{review.advisor.domain}</span>
+                                        ) : (
+                                            <span className="text-slate-400 italic">Not specified</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 font-bold text-slate-900">
                                         {getScore(review)}/100
