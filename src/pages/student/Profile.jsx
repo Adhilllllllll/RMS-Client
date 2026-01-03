@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useDispatch } from "react-redux";
+import { updateUser } from "../../features/auth/authSlice";
 import {
     getStudentProfile,
     changeStudentPassword,
@@ -36,6 +38,7 @@ const ProfileSkeleton = () => (
    MAIN PROFILE COMPONENT
 ============================================ */
 const Profile = () => {
+    const dispatch = useDispatch();
     // State
     const [profile, setProfile] = useState(null);
     const [progressSummary, setProgressSummary] = useState(null);
@@ -143,14 +146,18 @@ const Profile = () => {
         try {
             setAvatarUploading(true);
             const res = await uploadStudentAvatar(formData);
-            setProfile((prev) => ({ ...prev, avatar: res.data.avatar }));
+            const newAvatarUrl = res.data.avatar;
+            setProfile((prev) => ({ ...prev, avatar: newAvatarUrl }));
+
+            // Sync to Redux for global access (Layout header, etc.)
+            dispatch(updateUser({ avatar: newAvatarUrl }));
         } catch (err) {
             setError(err?.response?.data?.message || "Failed to upload avatar");
         } finally {
             setAvatarUploading(false);
             setAvatarPreview(null);
         }
-    }, []);
+    }, [dispatch]);
 
     // Handle document upload
     const handleDocumentUpload = useCallback(async (file) => {

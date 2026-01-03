@@ -1,34 +1,99 @@
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import api from "../api/axios";
 
 /**
  * RescheduleReviewModal - Modal for rescheduling a review
- * Matches Figma design
+ * Supports changing reviewer and slot-based time selection
  */
 const RescheduleReviewModal = ({ isOpen, onClose, review, onSubmit, isLoading }) => {
+    const { reviewers } = useSelector((state) => state.advisor);
+
+    const [newReviewerId, setNewReviewerId] = useState("");
     const [newDate, setNewDate] = useState("");
+    const [selectedSlotId, setSelectedSlotId] = useState("");
     const [newTime, setNewTime] = useState("");
     const [notify, setNotify] = useState(true);
     const [error, setError] = useState("");
 
+    // Slot fetching state
+    const [availableSlots, setAvailableSlots] = useState([]);
+    const [slotsLoading, setSlotsLoading] = useState(false);
+
+    // Initialize form with existing review data
     useEffect(() => {
-        if (isOpen && review?.scheduledAt) {
-            const date = new Date(review.scheduledAt);
-            setNewDate(date.toISOString().split('T')[0]);
-            setNewTime(date.toTimeString().slice(0, 5));
+        if (isOpen && review) {
+            setNewReviewerId(review.reviewerId || "");
+            if (review.scheduledAt) {
+                const date = new Date(review.scheduledAt);
+                setNewDate(date.toISOString().split('T')[0]);
+                setNewTime(date.toTimeString().slice(0, 5));
+            }
         }
         if (!isOpen) {
             setError("");
+            setAvailableSlots([]);
+            setSelectedSlotId("");
         }
     }, [isOpen, review]);
 
+    // Fetch available slots when reviewer and date change
+    useEffect(() => {
+        if (!newReviewerId || !newDate) {
+            setAvailableSlots([]);
+            return;
+        }
+
+        const fetchSlots = async () => {
+            setSlotsLoading(true);
+            try {
+                const res = await api.get(`/reviewer/availability/by-date?date=${newDate}&reviewerId=${newReviewerId}`);
+                setAvailableSlots(res.data || []);
+            } catch (err) {
+                console.error("Failed to fetch slots:", err);
+                setAvailableSlots([]);
+            } finally {
+                setSlotsLoading(false);
+            }
+        };
+        fetchSlots();
+    }, [newReviewerId, newDate]);
+
     if (!isOpen || !review) return null;
+
+    const handleReviewerChange = (e) => {
+        setNewReviewerId(e.target.value);
+        setSelectedSlotId("");
+        setNewTime("");
+    };
+
+    const handleDateChange = (e) => {
+        setNewDate(e.target.value);
+        setSelectedSlotId("");
+        setNewTime("");
+    };
+
+    const handleSlotChange = (e) => {
+        const slotId = e.target.value;
+        setSelectedSlotId(slotId);
+        const selectedSlot = availableSlots.find(s => s._id === slotId);
+        setNewTime(selectedSlot?.startTime || "");
+    };
+
+    const formatTime = (time) => {
+        if (!time) return "";
+        const [h, m] = time.split(":");
+        const hour = parseInt(h, 10);
+        const ampm = hour >= 12 ? "PM" : "AM";
+        return `${hour % 12 || 12}:${m} ${ampm}`;
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         setError("");
 
         if (!newDate || !newTime) {
-            setError("Please select both date and time");
+            setError("Please select date and time slot");
             return;
         }
 
@@ -39,10 +104,14 @@ const RescheduleReviewModal = ({ isOpen, onClose, review, onSubmit, isLoading })
         }
 
         onSubmit({
+            reviewerId: newReviewerId,
             scheduledAt: scheduledAt.toISOString(),
             notifyParticipants: notify,
         });
     };
+
+    // Get selected reviewer name for display
+    const selectedReviewerName = reviewers.find(r => r.id === newReviewerId)?.name || review.reviewer;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -72,7 +141,7 @@ const RescheduleReviewModal = ({ isOpen, onClose, review, onSubmit, isLoading })
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     {/* Review Info */}
                     <p className="text-sm text-slate-600">
-                        Reschedule review for <span className="font-semibold text-slate-900">{review.student}</span> with <span className="font-semibold text-blue-600">{review.reviewer}</span>
+                        Reschedule review for <span className="font-semibold text-slate-900">{review.student}</span>
                     </p>
 
                     {/* Error */}
@@ -82,6 +151,31 @@ const RescheduleReviewModal = ({ isOpen, onClose, review, onSubmit, isLoading })
                         </div>
                     )}
 
+                    {/* Reviewer Select */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                            Reviewer
+                        </label>
+                        <select
+                            value={newReviewerId}
+                            onChange={handleReviewerChange}
+                            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            disabled={isLoading}
+                        >
+                            <option value="">Select a reviewer</option>
+                            {reviewers.filter(r => r.status === "Available").map(reviewer => (
+                                <option key={reviewer.id} value={reviewer.id}>
+                                    {reviewer.name} ({reviewer.title})
+                                </option>
+                            ))}
+                        </select>
+                        {newReviewerId !== review.reviewerId && newReviewerId && (
+                            <p className="text-xs text-blue-600 mt-1">
+                                Changing from {review.reviewer} to {selectedReviewerName}
+                            </p>
+                        )}
+                    </div>
+
                     {/* Date Input */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -90,25 +184,45 @@ const RescheduleReviewModal = ({ isOpen, onClose, review, onSubmit, isLoading })
                         <input
                             type="date"
                             value={newDate}
-                            onChange={(e) => setNewDate(e.target.value)}
+                            onChange={handleDateChange}
                             min={new Date().toISOString().split('T')[0]}
                             className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             disabled={isLoading}
                         />
                     </div>
 
-                    {/* Time Input */}
+                    {/* Time Slot Select */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                            New Time
+                            Time Slot
                         </label>
-                        <input
-                            type="time"
-                            value={newTime}
-                            onChange={(e) => setNewTime(e.target.value)}
-                            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            disabled={isLoading}
-                        />
+                        {slotsLoading ? (
+                            <div className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-400 text-sm">
+                                Loading slots...
+                            </div>
+                        ) : !newReviewerId || !newDate ? (
+                            <div className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-400 text-sm">
+                                Select reviewer & date first
+                            </div>
+                        ) : availableSlots.length === 0 ? (
+                            <div className="w-full px-4 py-2.5 border border-amber-200 rounded-lg bg-amber-50 text-amber-600 text-sm">
+                                No slots available for this date
+                            </div>
+                        ) : (
+                            <select
+                                value={selectedSlotId}
+                                onChange={handleSlotChange}
+                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                disabled={isLoading}
+                            >
+                                <option value="">Select time slot</option>
+                                {availableSlots.map(slot => (
+                                    <option key={slot._id} value={slot._id}>
+                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                     </div>
 
                     {/* Notify Checkbox */}
@@ -135,7 +249,7 @@ const RescheduleReviewModal = ({ isOpen, onClose, review, onSubmit, isLoading })
                         </button>
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || (!selectedSlotId && !newTime)}
                             className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {isLoading ? (

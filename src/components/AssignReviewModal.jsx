@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchAssignedStudents } from "../features/advisor/advisorSlice";
-
+import api from "../api/axios";
 /**
  * AssignReviewModal - Modal for assigning a review to a student
  */
@@ -13,11 +13,14 @@ const AssignReviewModal = ({ isOpen, onClose, onSubmit, isLoading, preselectedRe
         studentId: "",
         reviewerId: preselectedReviewer?.id || "",
         date: "",
-        time: "",
+        slotId: "", // Selected slot ID
+        time: "", // Will be derived from slot
         mode: "online",
         week: 1,
     });
     const [error, setError] = useState("");
+    const [availableSlots, setAvailableSlots] = useState([]);
+    const [slotsLoading, setSlotsLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -31,27 +34,67 @@ const AssignReviewModal = ({ isOpen, onClose, onSubmit, isLoading, preselectedRe
                 studentId: "",
                 reviewerId: preselectedReviewer?.id || "",
                 date: "",
+                slotId: "",
                 time: "",
                 mode: "online",
                 week: 1,
             });
             setError("");
+            setAvailableSlots([]);
         }
     }, [isOpen, dispatch, preselectedReviewer]);
+
+    // Fetch available slots when reviewer and date are selected
+    useEffect(() => {
+        if (!formData.reviewerId || !formData.date) {
+            setAvailableSlots([]);
+            return;
+        }
+
+        const fetchSlots = async () => {
+            setSlotsLoading(true);
+            try {
+                const res = await api.get(`/reviewer/availability/by-date?date=${formData.date}&reviewerId=${formData.reviewerId}`);
+                setAvailableSlots(res.data || []);
+            } catch (err) {
+                console.error("Failed to fetch slots:", err);
+                setAvailableSlots([]);
+            } finally {
+                setSlotsLoading(false);
+            }
+        };
+        fetchSlots();
+    }, [formData.reviewerId, formData.date]);
 
     if (!isOpen) return null;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+
+        // When slot is selected, also set the time
+        if (name === "slotId") {
+            const selectedSlot = availableSlots.find(s => s._id === value);
+            setFormData(prev => ({
+                ...prev,
+                slotId: value,
+                time: selectedSlot?.startTime || ""
+            }));
+        } else {
+            // Reset slot when reviewer or date changes
+            if (name === "reviewerId" || name === "date") {
+                setFormData(prev => ({ ...prev, [name]: value, slotId: "", time: "" }));
+            } else {
+                setFormData(prev => ({ ...prev, [name]: value }));
+            }
+        }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         setError("");
 
-        if (!formData.studentId || !formData.reviewerId || !formData.date || !formData.time) {
-            setError("Please fill all required fields");
+        if (!formData.studentId || !formData.reviewerId || !formData.date || !formData.slotId) {
+            setError("Please fill all required fields and select a time slot");
             return;
         }
 
@@ -162,7 +205,7 @@ const AssignReviewModal = ({ isOpen, onClose, onSubmit, isLoading, preselectedRe
                         />
                     </div>
 
-                    {/* Date & Time */}
+                    {/* Date & Time Slot */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -180,16 +223,45 @@ const AssignReviewModal = ({ isOpen, onClose, onSubmit, isLoading, preselectedRe
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                                Time <span className="text-red-500">*</span>
+                                Time Slot <span className="text-red-500">*</span>
                             </label>
-                            <input
-                                type="time"
-                                name="time"
-                                value={formData.time}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                disabled={isLoading}
-                            />
+                            {slotsLoading ? (
+                                <div className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-400 text-sm">
+                                    Loading slots...
+                                </div>
+                            ) : !formData.reviewerId || !formData.date ? (
+                                <div className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-400 text-sm">
+                                    Select reviewer & date first
+                                </div>
+                            ) : availableSlots.length === 0 ? (
+                                <div className="w-full px-4 py-2.5 border border-amber-200 rounded-lg bg-amber-50 text-amber-600 text-sm">
+                                    No slots available
+                                </div>
+                            ) : (
+                                <select
+                                    name="slotId"
+                                    value={formData.slotId}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    disabled={isLoading}
+                                >
+                                    <option value="">Select time slot</option>
+                                    {availableSlots.map(slot => {
+                                        const formatTime = (time) => {
+                                            if (!time) return "";
+                                            const [h, m] = time.split(":");
+                                            const hour = parseInt(h, 10);
+                                            const ampm = hour >= 12 ? "PM" : "AM";
+                                            return `${hour % 12 || 12}:${m} ${ampm}`;
+                                        };
+                                        return (
+                                            <option key={slot._id} value={slot._id}>
+                                                {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            )}
                         </div>
                     </div>
 

@@ -42,12 +42,24 @@ const Availability = () => {
     const dispatch = useDispatch();
     const { list, breaks, status, loading, error } = useSelector((state) => state.availability);
 
-    // Form states
+    // Tab state: "recurring" or "specific"
+    const [activeTab, setActiveTab] = useState("recurring");
+
+    // Form states - Recurring
     const [slotForm, setSlotForm] = useState({
+        availabilityType: "recurring",
         dayOfWeek: "",
         startTime: "",
         endTime: "",
         isRecurring: true,
+    });
+
+    // Form states - Specific Date
+    const [specificForm, setSpecificForm] = useState({
+        availabilityType: "specific",
+        specificDate: "",
+        startTime: "",
+        endTime: "",
     });
 
     const [breakForm, setBreakForm] = useState({
@@ -77,6 +89,15 @@ const Availability = () => {
         });
     };
 
+    // Handle specific date form changes
+    const handleSpecificChange = (e) => {
+        const { name, value } = e.target;
+        setSpecificForm({
+            ...specificForm,
+            [name]: value
+        });
+    };
+
     // Handle break form changes
     const handleBreakChange = (e) => {
         const { name, value } = e.target;
@@ -86,12 +107,20 @@ const Availability = () => {
         });
     };
 
-    // Submit slot
+    // Submit recurring slot
     const handleAddSlot = (e) => {
         e.preventDefault();
         if (slotForm.dayOfWeek === "" || !slotForm.startTime || !slotForm.endTime) return;
         dispatch(addAvailability(slotForm));
         setSlotForm({ ...slotForm, startTime: "", endTime: "" });
+    };
+
+    // Submit specific date slot
+    const handleAddSpecificSlot = (e) => {
+        e.preventDefault();
+        if (!specificForm.specificDate || !specificForm.startTime || !specificForm.endTime) return;
+        dispatch(addAvailability(specificForm));
+        setSpecificForm({ ...specificForm, startTime: "", endTime: "" });
     };
 
     // Submit break
@@ -205,58 +234,128 @@ const Availability = () => {
             {/* Add Availability Slot Section */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">Add Availability Slot</h3>
-                <form onSubmit={handleAddSlot} className="flex flex-wrap items-end gap-4">
-                    <div className="flex-1 min-w-[140px]">
-                        <select
-                            name="dayOfWeek"
-                            value={slotForm.dayOfWeek}
-                            onChange={handleSlotChange}
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                        >
-                            <option value="">Select Day</option>
-                            {DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                        </select>
-                    </div>
-                    <div className="w-32">
-                        <input
-                            type="time"
-                            name="startTime"
-                            value={slotForm.startTime}
-                            onChange={handleSlotChange}
-                            placeholder="--:--"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                            required
-                        />
-                    </div>
-                    <div className="w-32">
-                        <input
-                            type="time"
-                            name="endTime"
-                            value={slotForm.endTime}
-                            onChange={handleSlotChange}
-                            placeholder="--:--"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                            required
-                        />
-                    </div>
+
+                {/* Tab Navigation */}
+                <div className="flex gap-2 mb-4">
                     <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-sm transition-colors flex items-center gap-2"
+                        onClick={() => setActiveTab("recurring")}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "recurring"
+                            ? "bg-purple-100 text-purple-700"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            }`}
                     >
-                        <span>+</span> Add Slot
+                        Recurring (Weekly)
                     </button>
-                </form>
-                <label className="flex items-center gap-2 mt-3 text-sm text-slate-600">
-                    <input
-                        type="checkbox"
-                        name="isRecurring"
-                        checked={slotForm.isRecurring}
-                        onChange={handleSlotChange}
-                        className="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
-                    />
-                    Repeat weekly
-                </label>
+                    <button
+                        onClick={() => setActiveTab("specific")}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "specific"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            }`}
+                    >
+                        Specific Date
+                    </button>
+                </div>
+
+                {/* Recurring Slot Form */}
+                {activeTab === "recurring" && (
+                    <>
+                        <form onSubmit={handleAddSlot} className="flex flex-wrap items-end gap-4">
+                            <div className="flex-1 min-w-[140px]">
+                                <label className="block text-xs text-slate-500 mb-1">Day of Week</label>
+                                <select
+                                    name="dayOfWeek"
+                                    value={slotForm.dayOfWeek}
+                                    onChange={handleSlotChange}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                >
+                                    <option value="">Select Day</option>
+                                    {DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                                </select>
+                            </div>
+                            <div className="w-32">
+                                <label className="block text-xs text-slate-500 mb-1">Start Time</label>
+                                <input
+                                    type="time"
+                                    name="startTime"
+                                    value={slotForm.startTime}
+                                    onChange={handleSlotChange}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                    required
+                                />
+                            </div>
+                            <div className="w-32">
+                                <label className="block text-xs text-slate-500 mb-1">End Time</label>
+                                <input
+                                    type="time"
+                                    name="endTime"
+                                    value={slotForm.endTime}
+                                    onChange={handleSlotChange}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-sm transition-colors flex items-center gap-2"
+                            >
+                                <span>+</span> Add Recurring
+                            </button>
+                        </form>
+                        <p className="text-xs text-slate-500 mt-2">This slot will repeat every week on the selected day.</p>
+                    </>
+                )}
+
+                {/* Specific Date Form */}
+                {activeTab === "specific" && (
+                    <>
+                        <form onSubmit={handleAddSpecificSlot} className="flex flex-wrap items-end gap-4">
+                            <div className="flex-1 min-w-[160px]">
+                                <label className="block text-xs text-slate-500 mb-1">Date</label>
+                                <input
+                                    type="date"
+                                    name="specificDate"
+                                    value={specificForm.specificDate}
+                                    onChange={handleSpecificChange}
+                                    min={new Date().toISOString().split('T')[0]}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                    required
+                                />
+                            </div>
+                            <div className="w-32">
+                                <label className="block text-xs text-slate-500 mb-1">Start Time</label>
+                                <input
+                                    type="time"
+                                    name="startTime"
+                                    value={specificForm.startTime}
+                                    onChange={handleSpecificChange}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                    required
+                                />
+                            </div>
+                            <div className="w-32">
+                                <label className="block text-xs text-slate-500 mb-1">End Time</label>
+                                <input
+                                    type="time"
+                                    name="endTime"
+                                    value={specificForm.endTime}
+                                    onChange={handleSpecificChange}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors flex items-center gap-2"
+                            >
+                                <span>+</span> Add Date Slot
+                            </button>
+                        </form>
+                        <p className="text-xs text-slate-500 mt-2">This slot is for a specific date only (one-time).</p>
+                    </>
+                )}
             </div>
 
             {/* Available Time Slots */}
@@ -270,33 +369,49 @@ const Availability = () => {
                     <p className="text-slate-400 text-sm">No availability slots created yet.</p>
                 ) : (
                     <div className="space-y-3">
-                        {list.map((slot) => (
-                            <div key={slot._id} className="flex items-center justify-between p-3 bg-purple-50 border border-purple-100 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        {list.map((slot) => {
+                            const isSpecific = slot.availabilityType === "specific";
+                            const bgColor = isSpecific ? "bg-blue-50 border-blue-100" : "bg-purple-50 border-purple-100";
+                            const iconBg = isSpecific ? "bg-blue-100" : "bg-purple-100";
+                            const iconColor = isSpecific ? "text-blue-600" : "text-purple-600";
+                            const labelColor = isSpecific ? "text-blue-600" : "text-purple-600";
+
+                            return (
+                                <div key={slot._id} className={`flex items-center justify-between p-3 border rounded-lg ${bgColor}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${iconBg}`}>
+                                            <svg className={`w-4 h-4 ${iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                {isSpecific ? (
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                ) : (
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                )}
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-slate-900">
+                                                {isSpecific
+                                                    ? `${new Date(slot.specificDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}: `
+                                                    : `${DAYS.find(d => d.value === slot.dayOfWeek)?.label}: `
+                                                }
+                                                {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                            </span>
+                                            <span className={`ml-2 text-xs ${labelColor}`}>
+                                                {isSpecific ? "One-time" : "Recurring weekly"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDelete(slot._id)}
+                                        className="text-red-500 hover:text-red-700 p-2"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
-                                    </div>
-                                    <div>
-                                        <span className="font-medium text-slate-900">
-                                            {DAYS.find(d => d.value === slot.dayOfWeek)?.label}: {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                                        </span>
-                                        {slot.isRecurring && (
-                                            <span className="ml-2 text-xs text-purple-600">Recurring weekly</span>
-                                        )}
-                                    </div>
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => handleDelete(slot._id)}
-                                    className="text-red-500 hover:text-red-700 p-2"
-                                >
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
