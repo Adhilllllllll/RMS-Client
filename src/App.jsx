@@ -37,12 +37,14 @@ import AdvisorNotes from "./pages/advisor/NotesTemplates";
 import AdvisorAnalytics from "./pages/advisor/ReportsAnalytics";
 import AdvisorProfile from "./pages/advisor/Profile";
 import AdvisorChat from "./pages/advisor/Chat";
+import AdvisorIssues from "./pages/advisor/Issues";
 import { useSelector, useDispatch } from "react-redux";
 import { refreshUser } from "./features/auth/authSlice";
+import { initializeSocket, disconnectSocket } from "./socket/socketClient";
 
 function App() {
   const dispatch = useDispatch();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, token } = useSelector((state) => state.auth);
 
   // Refresh user profile from backend on app load
   useEffect(() => {
@@ -50,6 +52,19 @@ function App() {
       dispatch(refreshUser());
     }
   }, [isAuthenticated, dispatch]);
+
+  // Initialize Socket.IO when authenticated
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      const socket = initializeSocket(token);
+      console.log("🔌 Socket initialized for user:", user?.name);
+
+      // Cleanup on logout
+      return () => {
+        disconnectSocket();
+      };
+    }
+  }, [isAuthenticated, token]);
 
   return (
     <BrowserRouter
@@ -384,6 +399,16 @@ function App() {
             <ProtectedRoute role="advisor">
               <Layout>
                 <AdvisorChat />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/advisor/notifications"
+          element={
+            <ProtectedRoute role="advisor">
+              <Layout>
+                <AdvisorIssues />
               </Layout>
             </ProtectedRoute>
           }
