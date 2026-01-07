@@ -243,19 +243,28 @@ const ReviewerAvailability = () => {
                                 {/* Reviewer Header */}
                                 <div className="flex items-center justify-between p-4 border-b border-slate-100">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
-                                            {reviewer.name?.charAt(0) || "R"}
+                                        <div className="relative">
+                                            <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+                                                {reviewer.name?.charAt(0) || "R"}
+                                            </div>
+                                            {/* Status indicator dot */}
+                                            <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${reviewer.status === 'available' ? 'bg-green-500' :
+                                                    reviewer.status === 'busy' ? 'bg-yellow-500' :
+                                                        reviewer.status === 'dnd' ? 'bg-red-500' : 'bg-slate-400'
+                                                }`}></span>
                                         </div>
                                         <div>
                                             <div className="font-semibold text-slate-900">{reviewer.name}</div>
                                             <div className="text-sm text-slate-500">Domain: {reviewer.title}</div>
                                         </div>
                                     </div>
-                                    <span className={`px-3 py-1 rounded text-sm font-medium ${reviewer.status === 'Available'
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-amber-100 text-amber-700'
+                                    <span className={`px-3 py-1 rounded text-sm font-medium ${reviewer.status === 'available' ? 'bg-green-100 text-green-700' :
+                                            reviewer.status === 'busy' ? 'bg-yellow-100 text-yellow-700' :
+                                                reviewer.status === 'dnd' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
                                         }`}>
-                                        {reviewer.status}
+                                        {reviewer.status === 'available' ? 'Available' :
+                                            reviewer.status === 'busy' ? 'Busy' :
+                                                reviewer.status === 'dnd' ? 'Do Not Disturb' : reviewer.status || 'Unknown'}
                                     </span>
                                 </div>
 

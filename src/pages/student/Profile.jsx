@@ -252,6 +252,11 @@ const Profile = () => {
                         helper="Email cannot be changed"
                         icon={emailIcon}
                     />
+                    <ReadOnlyField
+                        label="Domain"
+                        value={profile?.domain || profile?.course || "Not assigned"}
+                        helper="Domain is assigned by Admin"
+                    />
                 </div>
             </div>
 

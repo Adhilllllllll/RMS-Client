@@ -15,7 +15,7 @@ const ManageUsers = () => {
     const [editModal, setEditModal] = useState({ open: false, user: null });
     const [deleteModal, setDeleteModal] = useState({ open: false, user: null });
     const [actionLoading, setActionLoading] = useState(false);
-    const [editForm, setEditForm] = useState({ name: "", domain: "", phone: "" });
+    const [editForm, setEditForm] = useState({ name: "", domain: "" });
 
     // Map tab names to role filters
     const tabToRole = {
@@ -69,7 +69,6 @@ const ManageUsers = () => {
         setEditForm({
             name: user.name || "",
             domain: user.domain || "",
-            phone: user.phone || "",
         });
         setEditModal({ open: true, user });
     };
@@ -163,8 +162,8 @@ const ManageUsers = () => {
                                 <div className="flex justify-between">
                                     <span className="text-slate-500">Status:</span>
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${viewModal.user.status === 'active'
-                                            ? 'bg-green-100 text-green-700'
-                                            : 'bg-red-100 text-red-700'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-red-100 text-red-700'
                                         }`}>
                                         {viewModal.user.status === 'active' ? 'Active' : 'Inactive'}
                                     </span>
@@ -182,8 +181,8 @@ const ManageUsers = () => {
                                 onClick={() => handleToggleStatus(viewModal.user)}
                                 disabled={actionLoading}
                                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium ${viewModal.user.status === 'active'
-                                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
                                     }`}
                             >
                                 {viewModal.user.status === 'active' ? 'Deactivate' : 'Activate'}
@@ -215,22 +214,11 @@ const ManageUsers = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    {editModal.user?.isStudent ? "Course" : "Domain"}
-                                </label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Domain</label>
                                 <input
                                     type="text"
                                     value={editForm.domain}
                                     onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                                <input
-                                    type="text"
-                                    value={editForm.phone}
-                                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                 />
                             </div>
