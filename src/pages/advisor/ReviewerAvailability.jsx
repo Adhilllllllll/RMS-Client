@@ -6,7 +6,7 @@ import api from "../../api/axios";
 
 // Map dayOfWeek numbers to day names
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // Convert 24h time to 12h format
 const formatTime = (time) => {
@@ -92,11 +92,11 @@ const ReviewerAvailability = () => {
         });
     }, [reviewers, searchQuery, domainFilter]);
 
-    // Group slots by day
+    // Group slots by day (Mon-Sat)
     const getSlotsByDay = (slots) => {
-        const grouped = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+        const grouped = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
         slots?.forEach(slot => {
-            if (slot.dayOfWeek >= 1 && slot.dayOfWeek <= 5) {
+            if (slot.dayOfWeek >= 1 && slot.dayOfWeek <= 6) {
                 grouped[slot.dayOfWeek].push(slot);
             }
         });
@@ -249,8 +249,8 @@ const ReviewerAvailability = () => {
                                             </div>
                                             {/* Status indicator dot */}
                                             <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${reviewer.status === 'available' ? 'bg-green-500' :
-                                                    reviewer.status === 'busy' ? 'bg-yellow-500' :
-                                                        reviewer.status === 'dnd' ? 'bg-red-500' : 'bg-slate-400'
+                                                reviewer.status === 'busy' ? 'bg-yellow-500' :
+                                                    reviewer.status === 'dnd' ? 'bg-red-500' : 'bg-slate-400'
                                                 }`}></span>
                                         </div>
                                         <div>
@@ -259,8 +259,8 @@ const ReviewerAvailability = () => {
                                         </div>
                                     </div>
                                     <span className={`px-3 py-1 rounded text-sm font-medium ${reviewer.status === 'available' ? 'bg-green-100 text-green-700' :
-                                            reviewer.status === 'busy' ? 'bg-yellow-100 text-yellow-700' :
-                                                reviewer.status === 'dnd' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
+                                        reviewer.status === 'busy' ? 'bg-yellow-100 text-yellow-700' :
+                                            reviewer.status === 'dnd' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
                                         }`}>
                                         {reviewer.status === 'available' ? 'Available' :
                                             reviewer.status === 'busy' ? 'Busy' :
@@ -271,7 +271,7 @@ const ReviewerAvailability = () => {
                                 {/* Weekly Availability Grid */}
                                 <div className="p-4">
                                     <div className="text-sm font-medium text-slate-700 mb-3">Weekly Availability</div>
-                                    <div className="grid grid-cols-5 gap-3">
+                                    <div className="grid grid-cols-6 gap-3">
                                         {WEEKDAYS.map((day, idx) => {
                                             const dayNum = idx + 1;
                                             const daySlots = slotsByDay[dayNum] || [];
@@ -297,6 +297,28 @@ const ReviewerAvailability = () => {
                                             );
                                         })}
                                     </div>
+
+                                    {/* Specific Date Availability */}
+                                    {reviewer.specificSlots && reviewer.specificSlots.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-slate-100">
+                                            <div className="text-sm font-medium text-slate-700 mb-2">Upcoming Specific Dates</div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {reviewer.specificSlots
+                                                    .filter(slot => new Date(slot.specificDate) >= new Date())
+                                                    .slice(0, 5)
+                                                    .map((slot, i) => {
+                                                        const date = new Date(slot.specificDate);
+                                                        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                        return (
+                                                            <div key={i} className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs">
+                                                                <div className="font-semibold text-blue-700">{dateStr}</div>
+                                                                <div className="text-blue-600">{formatTime(slot.startTime)} - {formatTime(slot.endTime)}</div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Assign Button */}

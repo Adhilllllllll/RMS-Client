@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAdvisorReviews } from "../../features/advisor/advisorSlice";
-import { rescheduleReview, cancelReview } from "../../features/advisor/advisorApi";
+import { rescheduleReview, cancelReview, submitFinalScore, getReviewEvaluations, updateReviewDetails } from "../../features/advisor/advisorApi";
 import ViewReviewModal from "../../components/ViewReviewModal";
 import RescheduleReviewModal from "../../components/RescheduleReviewModal";
 import CancelReviewModal from "../../components/CancelReviewModal";
+import FinalScoringModal from "../../components/FinalScoringModal";
 
 const Reviews = () => {
     const dispatch = useDispatch();
@@ -20,10 +21,12 @@ const Reviews = () => {
     const [viewModal, setViewModal] = useState({ open: false, review: null });
     const [rescheduleModal, setRescheduleModal] = useState({ open: false, review: null });
     const [cancelModal, setCancelModal] = useState({ open: false, review: null });
+    const [finalScoreModal, setFinalScoreModal] = useState({ open: false, review: null, evaluation: null });
 
     // Loading states for modals
     const [rescheduleLoading, setRescheduleLoading] = useState(false);
     const [cancelLoading, setCancelLoading] = useState(false);
+    const [finalScoreLoading, setFinalScoreLoading] = useState(false);
 
     // Success message
     const [successMessage, setSuccessMessage] = useState("");
@@ -78,7 +81,26 @@ const Reviews = () => {
         setViewModal({ open: false, review: null });
         setRescheduleModal({ open: false, review: null });
         setCancelModal({ open: false, review: null });
+        setFinalScoreModal({ open: false, review: null, evaluation: null });
     }, []);
+
+    // Handle give final score - fetch evaluation and open modal
+    const handleGiveFinalScore = async (review) => {
+        try {
+            setFinalScoreLoading(true);
+            const response = await getReviewEvaluations(review.id);
+            setFinalScoreModal({
+                open: true,
+                review: response.data.review,
+                evaluation: response.data.reviewerEvaluation
+            });
+        } catch (err) {
+            console.error("Failed to fetch evaluations:", err);
+            alert(err.response?.data?.message || "Failed to fetch reviewer evaluation");
+        } finally {
+            setFinalScoreLoading(false);
+        }
+    };
 
     // Reschedule submit
     const handleRescheduleSubmit = async (data) => {
@@ -118,13 +140,33 @@ const Reviews = () => {
             case "scheduled":
                 return "bg-blue-100 text-blue-700";
             case "completed":
+                return "bg-amber-100 text-amber-700";
+            case "scored":
                 return "bg-green-100 text-green-700";
             case "pending":
-                return "bg-amber-100 text-amber-700";
+                return "bg-slate-100 text-slate-700";
+            case "accepted":
+                return "bg-teal-100 text-teal-700";
             case "cancelled":
                 return "bg-red-100 text-red-700";
             default:
                 return "bg-slate-100 text-slate-700";
+        }
+    };
+
+    // Handle final score submit
+    const handleFinalScoreSubmit = async (data) => {
+        setFinalScoreLoading(true);
+        try {
+            await submitFinalScore(finalScoreModal.review.id, data);
+            setSuccessMessage("Final score submitted successfully!");
+            handleCloseModals();
+            dispatch(fetchAdvisorReviews());
+        } catch (err) {
+            console.error("Final score error:", err);
+            alert(err.response?.data?.message || "Failed to submit final score");
+        } finally {
+            setFinalScoreLoading(false);
         }
     };
 
@@ -231,22 +273,42 @@ const Reviews = () => {
                                                 View
                                             </button>
 
-                                            {/* Reschedule & Cancel - Only for scheduled/pending */}
-                                            {review.status?.toLowerCase() !== "completed" && review.status?.toLowerCase() !== "cancelled" && (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleReschedule(review)}
-                                                        className="px-3 py-1 bg-amber-500 text-white text-xs font-medium rounded hover:bg-amber-600 transition-colors"
-                                                    >
-                                                        Reschedule
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleCancel(review)}
-                                                        className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded hover:bg-red-600 transition-colors"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </>
+                                            {/* Reschedule & Cancel - Only for scheduled/pending/accepted */}
+                                            {review.status?.toLowerCase() !== "completed" &&
+                                                review.status?.toLowerCase() !== "scored" &&
+                                                review.status?.toLowerCase() !== "cancelled" && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleReschedule(review)}
+                                                            className="px-3 py-1 bg-amber-500 text-white text-xs font-medium rounded hover:bg-amber-600 transition-colors"
+                                                        >
+                                                            Reschedule
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleCancel(review)}
+                                                            className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded hover:bg-red-600 transition-colors"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </>
+                                                )}
+
+                                            {/* Give Final Score - Only for completed reviews */}
+                                            {review.status?.toLowerCase() === "completed" && (
+                                                <button
+                                                    onClick={() => handleGiveFinalScore(review)}
+                                                    disabled={finalScoreLoading}
+                                                    className="px-3 py-1 bg-teal-600 text-white text-xs font-medium rounded hover:bg-teal-700 transition-colors disabled:opacity-50"
+                                                >
+                                                    {finalScoreLoading ? "Loading..." : "Final Score"}
+                                                </button>
+                                            )}
+
+                                            {/* View Final Score - Only for scored reviews */}
+                                            {review.status?.toLowerCase() === "scored" && (
+                                                <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded border border-green-200">
+                                                    Scored: {review.marks}/10
+                                                </span>
                                             )}
                                         </div>
                                     </td>
@@ -262,6 +324,12 @@ const Reviews = () => {
                 isOpen={viewModal.open}
                 onClose={handleCloseModals}
                 review={viewModal.review}
+                userRole="advisor"
+                onUpdate={async (reviewId, data) => {
+                    await updateReviewDetails(reviewId, data);
+                    setSuccessMessage("Review updated successfully!");
+                    dispatch(fetchAdvisorReviews());
+                }}
             />
 
             <RescheduleReviewModal
@@ -278,6 +346,15 @@ const Reviews = () => {
                 review={cancelModal.review}
                 onSubmit={handleCancelSubmit}
                 isLoading={cancelLoading}
+            />
+
+            <FinalScoringModal
+                isOpen={finalScoreModal.open}
+                onClose={handleCloseModals}
+                onSubmit={handleFinalScoreSubmit}
+                review={finalScoreModal.review}
+                reviewerEvaluation={finalScoreModal.evaluation}
+                loading={finalScoreLoading}
             />
         </div>
     );

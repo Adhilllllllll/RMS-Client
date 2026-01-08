@@ -2,38 +2,32 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { DASHBOARD_TITLES } from "../../constants/appConfig";
 
 /* ============================================
    Stat Card Component
 ============================================ */
-const StatCard = ({ title, value, change, changeType = "positive", icon, color = "blue" }) => {
-    const colorClasses = {
-        blue: "bg-blue-50 text-blue-600",
-        green: "bg-green-50 text-green-600",
-        purple: "bg-purple-50 text-purple-600",
-        orange: "bg-orange-50 text-orange-600",
-        slate: "bg-slate-50 text-slate-600",
-    };
-
+const StatCard = ({ title, value, change, changeType = "positive", icon }) => {
     return (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
             <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-slate-500">{title}</span>
                 {icon && (
-                    <div className={`w-10 h-10 rounded-lg ${colorClasses[color]} flex items-center justify-center`}>
+                    <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
                         {icon}
                     </div>
                 )}
             </div>
             <div className="text-3xl font-bold text-slate-900">{value}</div>
             {change !== undefined && (
-                <div className={`text-sm mt-1 ${changeType === "positive" ? "text-green-600" : "text-red-600"}`}>
+                <div className={`text-sm mt-1 ${changeType === "positive" ? "text-teal-600" : "text-red-600"}`}>
                     {changeType === "positive" ? "+" : ""}{change}%
                 </div>
             )}
         </div>
     );
 };
+
 
 /* ============================================
    Simple Line Chart Component
@@ -55,18 +49,18 @@ const LineChart = ({ data, labels }) => {
                     <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#e2e8f0" strokeWidth="0.5" />
                 ))}
                 {/* Line */}
-                <path d={pathD} fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d={pathD} fill="none" stroke="#0f766e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 {/* Area */}
-                <path d={`${pathD} L 100 100 L 0 100 Z`} fill="url(#blueGradient)" opacity="0.1" />
+                <path d={`${pathD} L 100 100 L 0 100 Z`} fill="url(#tealGradient)" opacity="0.1" />
                 <defs>
-                    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#3b82f6" />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                    <linearGradient id="tealGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#0f766e" />
+                        <stop offset="100%" stopColor="#0f766e" stopOpacity="0" />
                     </linearGradient>
                 </defs>
                 {/* Points */}
                 {points.map((p, i) => (
-                    <circle key={i} cx={p.x} cy={p.y} r="2" fill="#3b82f6" />
+                    <circle key={i} cx={p.x} cy={p.y} r="2" fill="#0f766e" />
                 ))}
             </svg>
             {/* Labels */}
@@ -90,7 +84,7 @@ const BarChart = ({ data, labels }) => {
             {data.map((value, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                     <div
-                        className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-md transition-all duration-500"
+                        className="w-full bg-gradient-to-t from-teal-600 to-teal-500 rounded-t-md transition-all duration-500"
                         style={{ height: `${(value / maxValue) * 100}%`, minHeight: value > 0 ? "8px" : "2px" }}
                     />
                     <span className="text-xs text-slate-400">{labels[i]}</span>
@@ -106,9 +100,9 @@ const BarChart = ({ data, labels }) => {
 const QuickActionButton = ({ icon, label, onClick }) => (
     <button
         onClick={onClick}
-        className="flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all"
+        className="flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-all"
     >
-        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+        <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center text-teal-600">
             {icon}
         </div>
         <span className="text-sm font-medium text-slate-700">{label}</span>
@@ -228,7 +222,7 @@ const AdminDashboard = () => {
         <div className="space-y-6 max-w-7xl mx-auto">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+                <h1 className="text-2xl font-bold text-slate-900">{DASHBOARD_TITLES.admin}</h1>
                 <p className="text-slate-500">Welcome to your admin dashboard</p>
             </div>
 
@@ -239,21 +233,18 @@ const AdminDashboard = () => {
                     value={stats.totalAdvisors}
                     change={2}
                     icon={userIcon}
-                    color="blue"
                 />
                 <StatCard
                     title="Total Reviewers"
                     value={stats.totalReviewers}
                     change={5}
                     icon={userIcon}
-                    color="green"
                 />
                 <StatCard
                     title="Total Students"
                     value={stats.totalStudents}
                     change={10}
                     icon={userIcon}
-                    color="purple"
                 />
             </div>
 
@@ -264,19 +255,16 @@ const AdminDashboard = () => {
                     value={stats.totalReviews}
                     change={8}
                     icon={reviewIcon}
-                    color="blue"
                 />
                 <StatCard
                     title="Reviews Today"
                     value={stats.reviewsToday}
                     icon={clockIcon}
-                    color="orange"
                 />
                 <StatCard
                     title="Pending Approvals"
                     value={stats.pendingApprovals}
                     icon={reviewIcon}
-                    color="slate"
                 />
             </div>
 

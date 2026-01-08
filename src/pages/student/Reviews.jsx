@@ -35,10 +35,18 @@ const SkeletonRow = () => (
 );
 
 /* ============================================
-   Report Modal Component
+   Report Modal Component - Enhanced for Final Scores
 ============================================ */
 const ReportModal = React.memo(({ report, onClose, loading }) => {
     if (!report && !loading) return null;
+
+    // Get score color based on value (0-10 scale)
+    const getScoreColor = (score) => {
+        if (score >= 8) return "bg-green-100 text-green-700";
+        if (score >= 6) return "bg-teal-100 text-teal-700";
+        if (score >= 4) return "bg-amber-100 text-amber-700";
+        return "bg-red-100 text-red-700";
+    };
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -62,7 +70,8 @@ const ReportModal = React.memo(({ report, onClose, loading }) => {
                             <div className="h-20 bg-slate-200 rounded"></div>
                         </div>
                     ) : report ? (
-                        <div className="space-y-4">
+                        <div className="space-y-5">
+                            {/* Basic Info */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-slate-500 uppercase">Reviewer</p>
@@ -80,22 +89,53 @@ const ReportModal = React.memo(({ report, onClose, loading }) => {
                                         })}
                                     </p>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-slate-500 uppercase">Score</p>
-                                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold ${report.score >= 80 ? "bg-green-100 text-green-700" :
-                                            report.score >= 60 ? "bg-amber-100 text-amber-700" :
-                                                "bg-red-100 text-red-700"
-                                        }`}>
-                                        {report.score}%
-                                    </span>
+                            </div>
+
+                            {/* Final Scores Section */}
+                            <div className="bg-gradient-to-r from-teal-50 to-green-50 rounded-xl p-4 border border-teal-100">
+                                <h4 className="text-sm font-semibold text-teal-800 mb-3">Final Scores</h4>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {/* Final Score */}
+                                    <div className="bg-white rounded-lg p-3 text-center shadow-sm">
+                                        <div className={`text-2xl font-bold ${report.finalScore >= 6 ? "text-green-600" : "text-amber-600"}`}>
+                                            {report.finalScore ?? report.score ?? "—"}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-1">Final Score</div>
+                                    </div>
+                                    {/* Attendance */}
+                                    <div className="bg-white rounded-lg p-3 text-center shadow-sm">
+                                        <div className={`text-2xl font-bold ${(report.attendance ?? 0) >= 6 ? "text-green-600" : "text-amber-600"}`}>
+                                            {report.attendance ?? "—"}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-1">Attendance</div>
+                                    </div>
+                                    {/* Discipline */}
+                                    <div className="bg-white rounded-lg p-3 text-center shadow-sm">
+                                        <div className={`text-2xl font-bold ${(report.discipline ?? 0) >= 6 ? "text-green-600" : "text-amber-600"}`}>
+                                            {report.discipline ?? "—"}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-1">Discipline</div>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="pt-4 border-t border-slate-200">
+
+                            {/* Feedback */}
+                            <div className="pt-2 border-t border-slate-200">
                                 <p className="text-xs text-slate-500 uppercase mb-2">Feedback</p>
                                 <p className="text-slate-700 leading-relaxed">
                                     {report.feedback || "No feedback provided."}
                                 </p>
                             </div>
+
+                            {/* Final Remarks from Advisor */}
+                            {report.finalRemarks && (
+                                <div className="pt-2 border-t border-slate-200">
+                                    <p className="text-xs text-slate-500 uppercase mb-2">Advisor Remarks</p>
+                                    <p className="text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-lg">
+                                        {report.finalRemarks}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     ) : null}
                 </div>
@@ -103,6 +143,7 @@ const ReportModal = React.memo(({ report, onClose, loading }) => {
         </div>
     );
 });
+
 
 /* ============================================
    Main Reviews Component
@@ -114,6 +155,7 @@ const Reviews = () => {
 
     const {
         upcomingReviews,
+        nextExpectedReview,
         reviewHistory,
         selectedReport,
         upcomingLoading,
@@ -210,6 +252,46 @@ const Reviews = () => {
                 </div>
             )}
 
+            {/* Next Expected Review Card */}
+            {nextExpectedReview && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-xl shadow-sm border border-amber-200">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-amber-500 text-white flex items-center justify-center">
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-slate-900">Next Expected Review</h3>
+                                    <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                                        Week {nextExpectedReview.nextWeek}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    {nextExpectedReview.message}
+                                </p>
+                                <div className="flex items-center gap-3 text-sm text-slate-500 mt-2">
+                                    <span className="flex items-center gap-1">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        Expected: {formatDate(nextExpectedReview.expectedDate)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-slate-500">Last review</p>
+                            <p className="text-sm font-medium text-slate-700">
+                                {formatDate(nextExpectedReview.lastReviewDate)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Upcoming Reviews */}
             <div>
                 <h2 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Reviews</h2>
@@ -230,9 +312,16 @@ const Reviews = () => {
                                         {getInitials(review.reviewer?.name)}
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-slate-900">
-                                            Review with {review.reviewer?.name || "Unknown Reviewer"}
-                                        </h3>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-semibold text-slate-900">
+                                                Review with {review.reviewer?.name || "Unknown Reviewer"}
+                                            </h3>
+                                            {review.type === "scheduled" && (
+                                                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium">
+                                                    Scheduled
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-sm text-slate-500">
                                             Advisor: {review.advisor?.name || "N/A"}
                                         </p>
@@ -256,8 +345,8 @@ const Reviews = () => {
                                     <button
                                         onClick={() => handleJoinSession(review)}
                                         className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ${isJoinable(review)
-                                                ? "bg-orange-500 text-white hover:bg-orange-600"
-                                                : "bg-orange-500 text-white opacity-90 hover:bg-orange-600"
+                                            ? "bg-orange-500 text-white hover:bg-orange-600"
+                                            : "bg-orange-500 text-white opacity-90 hover:bg-orange-600"
                                             }`}
                                     >
                                         Join Session

@@ -33,7 +33,7 @@ import AdvisorStudents from "./pages/advisor/Students";
 import AdvisorReviews from "./pages/advisor/Reviews";
 import AdvisorReviewerAvailability from "./pages/advisor/ReviewerAvailability";
 import AdvisorCalendar from "./pages/advisor/Calendar";
-import AdvisorNotes from "./pages/advisor/NotesTemplates";
+import AdvisorNotes from "./pages/advisor/Notes";
 import AdvisorAnalytics from "./pages/advisor/ReportsAnalytics";
 import AdvisorProfile from "./pages/advisor/Profile";
 import AdvisorChat from "./pages/advisor/Chat";

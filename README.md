@@ -1,7 +1,7 @@
-# Review Management System (RMS)
+# EduNexus — Where Learning Connects
 
 ## Overview
-The Review Management System (RMS) is a role-based web application built using the MERN stack.  
+EduNexus is a comprehensive educational review management platform built using the MERN stack.
 It simplifies the process of managing student reviews by enabling structured interaction between admins, advisors, reviewers, and students.
 
 ---

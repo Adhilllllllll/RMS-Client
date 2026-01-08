@@ -7,6 +7,8 @@ import {
     rejectReviewRequest,
     clearSelectedReview,
 } from "../../features/reviewer/reviewerSlice";
+import { markReviewCompleted } from "../../features/reviewer/reviewerApi";
+import ReviewerEvaluationModal from "../../components/ReviewerEvaluationModal";
 
 // Format date for display
 const formatDate = (dateString) => {
@@ -49,12 +51,13 @@ const ReviewRequests = () => {
     const dispatch = useDispatch();
     const { reviews, selectedReview, loading, error } = useSelector((state) => state.reviewer);
 
-    // Local state
     const [searchQuery, setSearchQuery] = useState("");
     const [viewModalOpen, setViewModalOpen] = useState(false);
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
+    const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
     const [selectedReviewId, setSelectedReviewId] = useState(null);
+    const [selectedReviewForEval, setSelectedReviewForEval] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState("");
 
@@ -117,6 +120,29 @@ const ReviewRequests = () => {
             setRejectModalOpen(false);
         } catch (err) {
             // Error handled by Redux
+        }
+        setActionLoading(false);
+    };
+
+    // Handle complete click - open evaluation modal
+    const handleCompleteClick = (review) => {
+        setSelectedReviewForEval(review);
+        setEvaluationModalOpen(true);
+    };
+
+    // Handle evaluation submit
+    const handleEvaluationSubmit = async (evaluationData) => {
+        setActionLoading(true);
+        try {
+            await markReviewCompleted(selectedReviewForEval._id, evaluationData);
+            setSuccessMsg("Review completed and evaluation submitted successfully!");
+            setEvaluationModalOpen(false);
+            setSelectedReviewForEval(null);
+            // Refresh reviews
+            dispatch(fetchReviewerReviews());
+        } catch (err) {
+            console.error("Failed to complete review:", err);
+            alert(err.response?.data?.message || "Failed to complete review");
         }
         setActionLoading(false);
     };
@@ -263,6 +289,18 @@ const ReviewRequests = () => {
                                                         </svg>
                                                     </button>
                                                 )}
+
+                                                {/* Mark Complete Button - Only for accepted */}
+                                                {request.status === "accepted" && (
+                                                    <button
+                                                        onClick={() => handleCompleteClick(request)}
+                                                        disabled={actionLoading}
+                                                        className="px-3 py-1 bg-teal-600 text-white text-xs font-medium rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
+                                                        title="Mark as Completed"
+                                                    >
+                                                        Complete
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -398,6 +436,18 @@ const ReviewRequests = () => {
                     </div>
                 </div>
             )}
+
+            {/* Evaluation Modal */}
+            <ReviewerEvaluationModal
+                isOpen={evaluationModalOpen}
+                onClose={() => {
+                    setEvaluationModalOpen(false);
+                    setSelectedReviewForEval(null);
+                }}
+                onSubmit={handleEvaluationSubmit}
+                review={selectedReviewForEval}
+                loading={actionLoading}
+            />
         </div>
     );
 };

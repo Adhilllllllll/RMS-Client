@@ -7,6 +7,7 @@ import {
     fetchAdvisorReviews,
     approveScore,
 } from "../../features/advisor/advisorSlice";
+import { DASHBOARD_TITLES } from "../../constants/appConfig";
 
 const AdvisorDashboard = () => {
     const dispatch = useDispatch();
@@ -27,22 +28,15 @@ const AdvisorDashboard = () => {
         dispatch(approveScore(reviewId));
     };
 
-    // Get avatar color based on first letter
-    const getAvatarColor = (name) => {
-        const colors = [
-            "bg-emerald-500", "bg-blue-500", "bg-purple-500",
-            "bg-amber-500", "bg-pink-500", "bg-cyan-500"
-        ];
-        const index = (name?.charCodeAt(0) || 0) % colors.length;
-        return colors[index];
-    };
+    // Get avatar color based on first letter - using teal shades for consistency
+    const getAvatarColor = () => "bg-teal-600";
 
     return (
         <div className="space-y-8 max-w-6xl mx-auto">
             {/* HEADER */}
             <div>
-                <h1 className="text-2xl font-bold text-slate-900">Welcome back, {user?.name?.split(' ')[0]}!</h1>
-                <p className="text-slate-500">Here's your advisor overview.</p>
+                <h1 className="text-2xl font-bold text-slate-900">{DASHBOARD_TITLES.advisor}</h1>
+                <p className="text-slate-500">Welcome back, {user?.name?.split(' ')[0]}!</p>
             </div>
 
             {/* STATS */}
@@ -57,7 +51,7 @@ const AdvisorDashboard = () => {
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="text-slate-500 text-sm font-medium uppercase tracking-wide">Reviews This Week</div>
-                    <div className="mt-2 text-3xl font-bold text-blue-600">
+                    <div className="mt-2 text-3xl font-bold text-teal-600">
                         {loading.stats ? (
                             <div className="h-9 w-8 bg-slate-200 animate-pulse rounded"></div>
                         ) : stats.reviewsThisWeek}
@@ -65,7 +59,7 @@ const AdvisorDashboard = () => {
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="text-slate-500 text-sm font-medium uppercase tracking-wide">Pending Scores</div>
-                    <div className="mt-2 text-3xl font-bold text-amber-500">
+                    <div className="mt-2 text-3xl font-bold text-teal-600">
                         {loading.stats ? (
                             <div className="h-9 w-8 bg-slate-200 animate-pulse rounded"></div>
                         ) : stats.pendingScores}
@@ -73,7 +67,7 @@ const AdvisorDashboard = () => {
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="text-slate-500 text-sm font-medium uppercase tracking-wide">Avg Progress</div>
-                    <div className="mt-2 text-3xl font-bold text-green-600">
+                    <div className="mt-2 text-3xl font-bold text-teal-600">
                         {loading.stats ? (
                             <div className="h-9 w-16 bg-slate-200 animate-pulse rounded"></div>
                         ) : `${stats.avgProgress}%`}
@@ -89,7 +83,7 @@ const AdvisorDashboard = () => {
                         <h3 className="font-bold text-slate-900">Upcoming Reviews</h3>
                         <button
                             onClick={() => navigate("/advisor/reviews")}
-                            className="text-sm text-blue-600 font-medium hover:underline"
+                            className="text-sm text-teal-600 font-medium hover:underline"
                         >
                             View All
                         </button>
@@ -122,7 +116,7 @@ const AdvisorDashboard = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                                        <span className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-xs font-medium">
                                             Scheduled
                                         </span>
                                     </div>
@@ -138,7 +132,7 @@ const AdvisorDashboard = () => {
                         <h3 className="font-bold text-slate-900">Pending Scores</h3>
                         <button
                             onClick={() => navigate("/advisor/reviews")}
-                            className="text-sm text-blue-600 font-medium hover:underline"
+                            className="text-sm text-teal-600 font-medium hover:underline"
                         >
                             View All
                         </button>
@@ -170,7 +164,7 @@ const AdvisorDashboard = () => {
                                         </div>
                                         <button
                                             onClick={() => handleApprove(r.id)}
-                                            className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-green-700 transition-colors"
+                                            className="bg-teal-600 text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-teal-700 transition-colors"
                                         >
                                             Approve
                                         </button>
@@ -186,7 +180,7 @@ const AdvisorDashboard = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <button
                     onClick={() => navigate("/advisor/reviews")}
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                    className="flex items-center justify-center gap-2 py-3 px-4 bg-teal-700 text-white rounded-lg font-medium hover:bg-teal-800 transition-colors shadow-sm"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />

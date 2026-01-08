@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import api from "../../api/axios";
 
 // ========== REUSABLE STAT CARD COMPONENT ==========
@@ -10,6 +10,7 @@ const StatCard = ({ title, value, subtitle, icon, color = "blue" }) => {
         purple: "bg-purple-50 text-purple-600",
         red: "bg-red-50 text-red-600",
         yellow: "bg-yellow-50 text-yellow-600",
+        teal: "bg-teal-50 text-teal-600",
     };
 
     return (
@@ -43,8 +44,6 @@ const TrendChart = ({ data, height = 200 }) => {
     }
 
     const maxValue = Math.max(...data.map(d => d.total), 1);
-    const chartWidth = 100;
-    const barWidth = chartWidth / data.length - 2;
 
     return (
         <div className="relative" style={{ height }}>
@@ -76,7 +75,7 @@ const TrendChart = ({ data, height = 200 }) => {
                                     }}
                                 />
                                 {/* Tooltip */}
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
                                     {item.completed}/{item.total} completed
                                 </div>
                             </div>
@@ -107,22 +106,49 @@ const ReportsAnalytics = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Filter state
+    const [filters, setFilters] = useState({
+        startDate: "",
+        endDate: "",
+        studentId: "",
+        reviewerId: "",
+    });
+    const [filtersApplied, setFiltersApplied] = useState(false);
+
+    const fetchAnalytics = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const params = {};
+            if (filters.startDate) params.startDate = filters.startDate;
+            if (filters.endDate) params.endDate = filters.endDate;
+            if (filters.studentId) params.studentId = filters.studentId;
+            if (filters.reviewerId) params.reviewerId = filters.reviewerId;
+
+            const res = await api.get("/advisor/analytics", { params });
+            setAnalytics(res.data.analytics);
+            setFiltersApplied(Object.values(filters).some(v => v));
+        } catch (err) {
+            setError(err?.response?.data?.message || "Failed to load analytics");
+        } finally {
+            setLoading(false);
+        }
+    }, [filters]);
+
     useEffect(() => {
-        const fetchAnalytics = async () => {
-            try {
-                setLoading(true);
-                const res = await api.get("/advisor/analytics");
-                setAnalytics(res.data.analytics);
-            } catch (err) {
-                setError(err?.response?.data?.message || "Failed to load analytics");
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchAnalytics();
     }, []);
 
-    if (loading) {
+    const handleApplyFilters = () => {
+        fetchAnalytics();
+    };
+
+    const handleResetFilters = () => {
+        setFilters({ startDate: "", endDate: "", studentId: "", reviewerId: "" });
+        setTimeout(() => fetchAnalytics(), 0);
+    };
+
+    if (loading && !analytics) {
         return (
             <div className="space-y-6">
                 <div className="h-8 bg-slate-200 rounded w-48 animate-pulse"></div>
@@ -149,9 +175,94 @@ const ReportsAnalytics = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h2 className="text-2xl font-bold text-slate-900">Reports & Analytics</h2>
-                <p className="text-slate-500">Comprehensive insights from your review data</p>
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Reports & Analytics</h2>
+                    <p className="text-slate-500">Comprehensive insights from your review data</p>
+                </div>
+                {filtersApplied && (
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                        Filters Applied
+                    </span>
+                )}
+            </div>
+
+            {/* Filters Section */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    Filter Analytics
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {/* Date Range */}
+                    <div>
+                        <label className="block text-xs text-slate-500 mb-1">Start Date</label>
+                        <input
+                            type="date"
+                            value={filters.startDate}
+                            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-slate-500 mb-1">End Date</label>
+                        <input
+                            type="date"
+                            value={filters.endDate}
+                            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                    </div>
+
+                    {/* Student Filter */}
+                    <div>
+                        <label className="block text-xs text-slate-500 mb-1">Student</label>
+                        <select
+                            value={filters.studentId}
+                            onChange={(e) => setFilters({ ...filters, studentId: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                        >
+                            <option value="">All Students</option>
+                            {analytics?.filterOptions?.students?.map((s) => (
+                                <option key={s._id} value={s._id}>{s.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Reviewer Filter */}
+                    <div>
+                        <label className="block text-xs text-slate-500 mb-1">Reviewer</label>
+                        <select
+                            value={filters.reviewerId}
+                            onChange={(e) => setFilters({ ...filters, reviewerId: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                        >
+                            <option value="">All Reviewers</option>
+                            {analytics?.filterOptions?.reviewers?.map((r) => (
+                                <option key={r._id} value={r._id}>{r.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-end gap-2">
+                        <button
+                            onClick={handleApplyFilters}
+                            disabled={loading}
+                            className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+                        >
+                            {loading ? "Loading..." : "Apply"}
+                        </button>
+                        <button
+                            onClick={handleResetFilters}
+                            className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Summary Cards - Row 1 */}
@@ -190,9 +301,9 @@ const ReportsAnalytics = () => {
                     }
                 />
                 <StatCard
-                    title="Avg Score"
+                    title="Avg Final Score"
                     value={analytics?.avgScore || 0}
-                    subtitle="Out of 100"
+                    subtitle="Out of 10"
                     color="orange"
                     icon={
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -202,7 +313,7 @@ const ReportsAnalytics = () => {
                 />
             </div>
 
-            {/* Summary Cards - Row 2 */}
+            {/* Summary Cards - Row 2 (Attendance & Discipline) */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <StatCard
                     title="Total Reviews"
@@ -216,13 +327,15 @@ const ReportsAnalytics = () => {
                     color="green"
                 />
                 <StatCard
-                    title="Pending"
-                    value={analytics?.pendingReviews || 0}
-                    color="yellow"
+                    title="Avg Attendance"
+                    value={analytics?.avgAttendance || 0}
+                    subtitle="Out of 10"
+                    color="teal"
                 />
                 <StatCard
-                    title="This Month"
-                    value={analytics?.reviewsThisMonth || 0}
+                    title="Avg Discipline"
+                    value={analytics?.avgDiscipline || 0}
+                    subtitle="Out of 10"
                     color="purple"
                 />
             </div>
@@ -240,7 +353,7 @@ const ReportsAnalytics = () => {
                     <h3 className="font-semibold text-slate-900 mb-4">Reviews by Status</h3>
                     <div className="space-y-4">
                         {[
-                            { label: "Completed", value: analytics?.statusBreakdown?.completed || 0, color: "bg-green-500" },
+                            { label: "Completed/Scored", value: analytics?.statusBreakdown?.completed || 0, color: "bg-green-500" },
                             { label: "Scheduled", value: analytics?.statusBreakdown?.scheduled || 0, color: "bg-blue-500" },
                             { label: "Pending", value: analytics?.statusBreakdown?.pending || 0, color: "bg-yellow-500" },
                             { label: "Cancelled", value: analytics?.statusBreakdown?.cancelled || 0, color: "bg-red-500" },
@@ -266,51 +379,81 @@ const ReportsAnalytics = () => {
                 </div>
             </div>
 
-            {/* Reviewer Performance Table */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="font-semibold text-slate-900 mb-4">Reviewer Performance</h3>
-                {!analytics?.reviewerPerformance || analytics.reviewerPerformance.length === 0 ? (
-                    <p className="text-slate-400 text-sm">No reviewer data available yet.</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                                <tr>
-                                    <th className="px-4 py-3">Reviewer</th>
-                                    <th className="px-4 py-3">Total Reviews</th>
-                                    <th className="px-4 py-3">Completed</th>
-                                    <th className="px-4 py-3">Completion Rate</th>
-                                    <th className="px-4 py-3">Avg Score</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {analytics.reviewerPerformance.map((reviewer, index) => (
-                                    <tr key={reviewer._id || index} className="hover:bg-slate-50">
-                                        <td className="px-4 py-3 font-medium text-slate-900">{reviewer.name}</td>
-                                        <td className="px-4 py-3 text-slate-600">{reviewer.totalReviews}</td>
-                                        <td className="px-4 py-3 text-slate-600">{reviewer.completedReviews}</td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-green-500"
-                                                        style={{ width: `${Math.round(reviewer.completionRate)}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-slate-600">{Math.round(reviewer.completionRate)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`font-medium ${reviewer.avgScore >= 70 ? 'text-green-600' : reviewer.avgScore >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                                {reviewer.avgScore}
-                                            </span>
-                                        </td>
+            {/* Performance Tables */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Reviewer Performance Table */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 className="font-semibold text-slate-900 mb-4">Reviewer Performance</h3>
+                    {!analytics?.reviewerPerformance || analytics.reviewerPerformance.length === 0 ? (
+                        <p className="text-slate-400 text-sm">No reviewer data available yet.</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th className="px-4 py-3">Reviewer</th>
+                                        <th className="px-4 py-3">Total</th>
+                                        <th className="px-4 py-3">Done</th>
+                                        <th className="px-4 py-3">Rate</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {analytics.reviewerPerformance.map((reviewer, index) => (
+                                        <tr key={reviewer._id || index} className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 font-medium text-slate-900">{reviewer.name}</td>
+                                            <td className="px-4 py-3 text-slate-600">{reviewer.totalReviews}</td>
+                                            <td className="px-4 py-3 text-slate-600">{reviewer.completedReviews}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`font-medium ${reviewer.completionRate >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
+                                                    {Math.round(reviewer.completionRate)}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
+                {/* Student Performance Table */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 className="font-semibold text-slate-900 mb-4">Student Performance</h3>
+                    {!analytics?.studentPerformance || analytics.studentPerformance.length === 0 ? (
+                        <p className="text-slate-400 text-sm">No student data available yet.</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th className="px-4 py-3">Student</th>
+                                        <th className="px-4 py-3">Reviews</th>
+                                        <th className="px-4 py-3">Progress</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {analytics.studentPerformance.map((student, index) => (
+                                        <tr key={student._id || index} className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 font-medium text-slate-900">{student.name}</td>
+                                            <td className="px-4 py-3 text-slate-600">{student.totalReviews}</td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-green-500"
+                                                            style={{ width: `${student.progress}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-slate-600">{student.progress}%</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

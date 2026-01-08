@@ -28,7 +28,10 @@ export const fetchUpcomingReviews = createAsyncThunk(
     async (_, thunkAPI) => {
         try {
             const res = await getUpcomingReviews();
-            return res.data.upcomingReviews || [];
+            return {
+                upcomingReviews: res.data.upcomingReviews || [],
+                nextExpectedReview: res.data.nextExpectedReview || null,
+            };
         } catch (err) {
             return thunkAPI.rejectWithValue(
                 err?.response?.data?.message || "Failed to fetch upcoming reviews"
@@ -272,6 +275,7 @@ export const markAllNotificationsRead = createAsyncThunk(
 const initialState = {
     profile: null,
     upcomingReviews: [],
+    nextExpectedReview: null,
     reviewHistory: [],
     selectedReport: null,
     // Progress page state
@@ -334,7 +338,8 @@ const studentSlice = createSlice({
             })
             .addCase(fetchUpcomingReviews.fulfilled, (state, action) => {
                 state.upcomingLoading = false;
-                state.upcomingReviews = action.payload;
+                state.upcomingReviews = action.payload.upcomingReviews;
+                state.nextExpectedReview = action.payload.nextExpectedReview;
             })
             .addCase(fetchUpcomingReviews.rejected, (state, action) => {
                 state.upcomingLoading = false;

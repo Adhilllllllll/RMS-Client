@@ -55,3 +55,28 @@ export const approveReviewScore = (reviewId) => {
 export const getReviewersAvailability = () => {
   return api.get("/advisor/reviewers/availability");
 };
+
+/* ===========================================
+   Review Lifecycle API (Final Scoring)
+=========================================== */
+
+// Get completed reviews that need final scoring
+export const getCompletedReviewsPendingScore = () => {
+  return api.get("/reviews/advisor/completed");
+};
+
+// Submit final score for a review
+export const submitFinalScore = (reviewId, data) => {
+  return api.patch(`/reviews/advisor/${reviewId}/final-score`, data);
+};
+
+// Get review evaluations (role-based visibility)
+export const getReviewEvaluations = (reviewId) => {
+  return api.get(`/reviews/${reviewId}/evaluations`);
+};
+
+// Update review details (date, mode, meetingLink, location)
+export const updateReviewDetails = (reviewId, data) => {
+  return api.patch(`/reviews/advisor/${reviewId}/edit`, data);
+};
+

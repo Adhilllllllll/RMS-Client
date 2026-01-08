@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../features/auth/authSlice";
+import { APP_NAME } from "../constants/appConfig";
 
 const Layout = ({ children }) => {
     const navigate = useNavigate();
@@ -66,7 +67,7 @@ const Layout = ({ children }) => {
             { label: "Calendar", path: "/advisor/calendar", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
             { label: "Chat", path: "/advisor/chat", icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" },
             { label: "Notifications", path: "/advisor/notifications", icon: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" },
-            { label: "Notes & Templates", path: "/advisor/notes", icon: "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" },
+            { label: "Notes", path: "/advisor/notes", icon: "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" },
             { label: "Reports & Analytics", path: "/advisor/analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
             { label: "Profile", path: "/advisor/profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
         ],
@@ -91,10 +92,13 @@ const Layout = ({ children }) => {
             <aside className="w-64 bg-white border-r border-slate-200 flex flex-col z-20">
                 <div className="h-16 flex items-center px-6 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                        <span className="bg-blue-600 p-1.5 rounded-lg">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        <span className="bg-teal-700 p-1.5 rounded-lg">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                            </svg>
                         </span>
-                        <span className="text-lg font-bold text-slate-800 tracking-tight">Project Review</span>
+                        <span className="text-lg font-bold text-slate-800 tracking-tight">{APP_NAME}</span>
                     </div>
                 </div>
 
@@ -106,11 +110,11 @@ const Layout = ({ children }) => {
                                 key={item.path}
                                 to={item.path}
                                 className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${active
-                                    ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100"
+                                    ? "bg-teal-50 text-teal-700 shadow-sm ring-1 ring-teal-100"
                                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                     }`}
                             >
-                                <svg className={`w-5 h-5 mr-3 ${active ? "text-blue-600" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className={`w-5 h-5 mr-3 ${active ? "text-teal-600" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                                 </svg>
                                 {item.label}

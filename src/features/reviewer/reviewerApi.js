@@ -54,3 +54,17 @@ export const updateMyReviewerProfile = (formData) => {
         headers: { "Content-Type": "multipart/form-data" },
     });
 };
+
+/* ===========================================
+   Review Lifecycle API
+=========================================== */
+
+// Mark review as completed and submit evaluation
+export const markReviewCompleted = (reviewId, evaluationData) => {
+    return api.patch(`/reviews/reviewer/${reviewId}/complete`, evaluationData);
+};
+
+// Get review evaluations (role-based visibility)
+export const getReviewEvaluations = (reviewId) => {
+    return api.get(`/reviews/${reviewId}/evaluations`);
+};

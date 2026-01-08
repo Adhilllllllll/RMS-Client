@@ -1,10 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-    fetchReviewerReviews,
-    fetchSingleReview,
-    clearSelectedReview,
-} from "../../features/reviewer/reviewerSlice";
+import api from "../../api/axios";
 
 // Debounce hook for search optimization
 const useDebounce = (value, delay) => {
@@ -27,70 +22,82 @@ const formatDate = (dateString) => {
 };
 
 const History = () => {
-    const dispatch = useDispatch();
-    const { reviews, selectedReview, loading, error } = useSelector((state) => state.reviewer);
+    // State
+    const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
 
-    // Local state
+    // Filters
     const [searchQuery, setSearchQuery] = useState("");
-    const [domainFilter, setDomainFilter] = useState("");
+    const [sortBy, setSortBy] = useState("date_desc");
+
+    // Modal
     const [viewModalOpen, setViewModalOpen] = useState(false);
+    const [selectedReview, setSelectedReview] = useState(null);
 
     // Debounced search
     const debouncedSearch = useDebounce(searchQuery, 300);
 
-    // Fetch reviews on mount
+    // Fetch history from API
+    const fetchHistory = useCallback(async (page = 1) => {
+        try {
+            setLoading(true);
+            setError(null);
+            const res = await api.get("/reviews/reviewer/history", {
+                params: { page, limit: pagination.limit, sortBy },
+            });
+            setHistory(res.data.history || []);
+            setPagination(res.data.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to fetch review history");
+        } finally {
+            setLoading(false);
+        }
+    }, [sortBy, pagination.limit]);
+
+    // Fetch on mount and when sortBy changes
     useEffect(() => {
-        dispatch(fetchReviewerReviews());
-    }, [dispatch]);
+        fetchHistory(1);
+    }, [sortBy]);
 
-    // Filter completed reviews only
-    const completedReviews = useMemo(() => {
-        return reviews.filter(r => r.status === "completed");
-    }, [reviews]);
-
-    const availableDomains = useMemo(() => {
-        const domains = completedReviews
-            .map(r => r.advisor?.domain || "Not specified")
-            .filter((v, i, arr) => arr.indexOf(v) === i);
-        return domains.sort();
-    }, [completedReviews]);
-
-    // Apply search and filters
-    const filteredReviews = useMemo(() => {
-        let result = completedReviews;
-
-        // Search by student name
-        if (debouncedSearch.trim()) {
-            const query = debouncedSearch.toLowerCase();
-            result = result.filter(r =>
-                r.student?.name?.toLowerCase().includes(query)
-            );
-        }
-
-        if (domainFilter) {
-            result = result.filter(r =>
-                (r.advisor?.domain || "Not specified") === domainFilter
-            );
-        }
-
-        return result;
-    }, [completedReviews, debouncedSearch, domainFilter]);
+    // Filter by search (client-side for current page)
+    const filteredHistory = useMemo(() => {
+        if (!debouncedSearch.trim()) return history;
+        const query = debouncedSearch.toLowerCase();
+        return history.filter(r =>
+            r.student?.name?.toLowerCase().includes(query)
+        );
+    }, [history, debouncedSearch]);
 
     // Handle view review
-    const handleView = useCallback((reviewId) => {
-        dispatch(fetchSingleReview(reviewId));
+    const handleView = useCallback((review) => {
+        setSelectedReview(review);
         setViewModalOpen(true);
-    }, [dispatch]);
+    }, []);
 
     // Close view modal
     const closeViewModal = useCallback(() => {
         setViewModalOpen(false);
-        dispatch(clearSelectedReview());
-    }, [dispatch]);
+        setSelectedReview(null);
+    }, []);
 
-    // Get score display (mock for now since score might not be in data)
-    const getScore = (review) => {
-        return review.score || review.totalScore || "—";
+    // Handle page change
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= pagination.totalPages) {
+            fetchHistory(newPage);
+        }
+    };
+
+    // Score display helper
+    const getScoreLabel = (key) => {
+        const labels = {
+            technicalUnderstanding: "Technical",
+            taskCompletion: "Task Completion",
+            communication: "Communication",
+            problemSolving: "Problem Solving",
+        };
+        return labels[key] || key;
     };
 
     return (
@@ -99,10 +106,10 @@ const History = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900">Review History</h2>
-                    <p className="text-slate-500">View your completed reviews</p>
+                    <p className="text-slate-500">Your completed reviews with submitted scores</p>
                 </div>
                 <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">
-                    {completedReviews.length} Completed
+                    {pagination.total} Completed
                 </span>
             </div>
 
@@ -126,36 +133,34 @@ const History = () => {
                     />
                 </div>
 
-                {/* Domain Filter */}
+                {/* Sort */}
                 <select
-                    value={domainFilter}
-                    onChange={(e) => setDomainFilter(e.target.value)}
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
                     className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
                 >
-                    <option value="">All Domains</option>
-                    {availableDomains.map((domain) => (
-                        <option key={domain} value={domain}>{domain}</option>
-                    ))}
+                    <option value="date_desc">Newest First</option>
+                    <option value="date_asc">Oldest First</option>
                 </select>
 
                 {/* Clear Filters */}
-                {(searchQuery || domainFilter) && (
+                {searchQuery && (
                     <button
-                        onClick={() => { setSearchQuery(""); setDomainFilter(""); }}
+                        onClick={() => setSearchQuery("")}
                         className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900"
                     >
-                        Clear Filters
+                        Clear Search
                     </button>
                 )}
             </div>
 
             {/* Table */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                {loading && completedReviews.length === 0 ? (
+                {loading && history.length === 0 ? (
                     <div className="flex items-center justify-center py-16">
                         <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                ) : filteredReviews.length === 0 ? (
+                ) : filteredHistory.length === 0 ? (
                     <div className="p-12 text-center">
                         <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center mb-4">
                             <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -164,9 +169,7 @@ const History = () => {
                         </div>
                         <h3 className="text-lg font-medium text-slate-900 mb-1">No completed reviews</h3>
                         <p className="text-slate-500 text-sm">
-                            {searchQuery || domainFilter
-                                ? "Try adjusting your filters"
-                                : "Completed reviews will appear here"}
+                            {searchQuery ? "Try adjusting your search" : "Completed reviews will appear here"}
                         </p>
                     </div>
                 ) : (
@@ -176,14 +179,14 @@ const History = () => {
                                 <th className="px-6 py-3">Student</th>
                                 <th className="px-6 py-3">Date</th>
                                 <th className="px-6 py-3">Domain</th>
-                                <th className="px-6 py-3">Score</th>
+                                <th className="px-6 py-3">Avg Score</th>
                                 <th className="px-6 py-3">Status</th>
                                 <th className="px-6 py-3">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredReviews.map((review) => (
-                                <tr key={review._id} className="hover:bg-slate-50">
+                            {filteredHistory.map((review) => (
+                                <tr key={review.id} className="hover:bg-slate-50">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm">
@@ -198,23 +201,25 @@ const History = () => {
                                         {formatDate(review.scheduledAt)}
                                     </td>
                                     <td className="px-6 py-4 text-slate-600">
-                                        {review.advisor?.domain ? (
-                                            <span className="text-slate-700">{review.advisor.domain}</span>
-                                        ) : (
-                                            <span className="text-slate-400 italic">Not specified</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 font-bold text-slate-900">
-                                        {getScore(review)}/100
+                                        {review.advisor?.domain || "General"}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
-                                            Completed
+                                        {review.averageScore !== null ? (
+                                            <span className={`font-bold ${review.averageScore >= 7 ? "text-green-600" : review.averageScore >= 5 ? "text-amber-600" : "text-red-600"}`}>
+                                                {review.averageScore.toFixed(1)}/10
+                                            </span>
+                                        ) : (
+                                            <span className="text-slate-400">—</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${review.status === "scored" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                                            {review.status === "scored" ? "Scored" : "Completed"}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <button
-                                            onClick={() => handleView(review._id)}
+                                            onClick={() => handleView(review)}
                                             className="p-1.5 text-slate-500 hover:text-purple-600 transition-colors"
                                             title="View Details"
                                         >
@@ -231,68 +236,119 @@ const History = () => {
                 )}
             </div>
 
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-500">
+                        Page {pagination.page} of {pagination.totalPages}
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => handlePageChange(pagination.page - 1)}
+                            disabled={pagination.page <= 1}
+                            className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            onClick={() => handlePageChange(pagination.page + 1)}
+                            disabled={pagination.page >= pagination.totalPages}
+                            className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* View Review Modal */}
-            {viewModalOpen && (
+            {viewModalOpen && selectedReview && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4">
-                        <div className="flex items-center justify-between p-4 border-b border-slate-200">
-                            <h3 className="text-lg font-bold text-slate-900">Review Details</h3>
-                            <button onClick={closeViewModal} className="text-slate-400 hover:text-slate-600">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
+                        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-purple-600">
+                            <h3 className="text-lg font-bold text-white">Review Details</h3>
+                            <button onClick={closeViewModal} className="text-white/80 hover:text-white">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
-                        <div className="p-6 space-y-4">
-                            {loading ? (
-                                <div className="flex justify-center py-8">
-                                    <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="p-6 space-y-5">
+                            {/* Basic Info */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase">Student</label>
+                                    <p className="font-medium text-slate-900">{selectedReview.student?.name}</p>
                                 </div>
-                            ) : selectedReview ? (
-                                <>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-xs text-slate-500 uppercase">Student</label>
-                                            <p className="font-medium text-slate-900">{selectedReview.student}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-slate-500 uppercase">Advisor</label>
-                                            <p className="font-medium text-slate-900">{selectedReview.advisor}</p>
-                                        </div>
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase">Advisor</label>
+                                    <p className="font-medium text-slate-900">{selectedReview.advisor?.name}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase">Domain</label>
+                                    <p className="font-medium text-slate-900">{selectedReview.advisor?.domain || "General"}</p>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase">Week</label>
+                                    <p className="font-medium text-slate-900">Week {selectedReview.week}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase">Date</label>
+                                    <p className="font-medium text-slate-900">{formatDate(selectedReview.scheduledAt)}</p>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase">Status</label>
+                                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${selectedReview.status === "scored" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                                        {selectedReview.status === "scored" ? "Scored" : "Completed"}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Submitted Scores */}
+                            {selectedReview.scores && (
+                                <div className="bg-purple-50 rounded-xl p-4">
+                                    <h4 className="text-sm font-semibold text-purple-800 mb-3">Your Submitted Scores</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {Object.entries(selectedReview.scores).map(([key, value]) => (
+                                            <div key={key} className="bg-white rounded-lg p-3">
+                                                <div className="text-xs text-slate-500">{getScoreLabel(key)}</div>
+                                                <div className={`text-xl font-bold ${value >= 7 ? "text-green-600" : value >= 5 ? "text-amber-600" : "text-red-600"}`}>
+                                                    {value}/10
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-xs text-slate-500 uppercase">Domain</label>
-                                            <p className="font-medium text-slate-900">{selectedReview.domain}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-slate-500 uppercase">Week</label>
-                                            <p className="font-medium text-slate-900">Week {selectedReview.week}</p>
-                                        </div>
+                                    <div className="mt-4 pt-3 border-t border-purple-200 flex justify-between items-center">
+                                        <span className="text-sm text-purple-700">Average Score</span>
+                                        <span className="text-2xl font-bold text-purple-600">
+                                            {selectedReview.averageScore?.toFixed(1)}/10
+                                        </span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-xs text-slate-500 uppercase">Date</label>
-                                            <p className="font-medium text-slate-900">{formatDate(selectedReview.scheduledAt)}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-slate-500 uppercase">Status</label>
-                                            <span className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium">
-                                                Completed
-                                            </span>
-                                        </div>
-                                    </div>
-                                    {selectedReview.feedback && (
-                                        <div>
-                                            <label className="text-xs text-slate-500 uppercase">Feedback</label>
-                                            <p className="text-slate-700 text-sm mt-1 bg-slate-50 p-3 rounded-lg">
-                                                {selectedReview.feedback}
-                                            </p>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <p className="text-slate-400 text-center">No data available</p>
+                                </div>
+                            )}
+
+                            {/* Feedback */}
+                            {selectedReview.feedback && (
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase">Feedback</label>
+                                    <p className="text-slate-700 text-sm mt-1 bg-slate-50 p-3 rounded-lg">
+                                        {selectedReview.feedback}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Remarks */}
+                            {selectedReview.remarks && (
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase">Remarks</label>
+                                    <p className="text-slate-700 text-sm mt-1 bg-slate-50 p-3 rounded-lg">
+                                        {selectedReview.remarks}
+                                    </p>
+                                </div>
                             )}
                         </div>
                         <div className="flex justify-end p-4 border-t border-slate-200">

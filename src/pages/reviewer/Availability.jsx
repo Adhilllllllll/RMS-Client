@@ -11,7 +11,7 @@ import {
 
 // Day configuration
 const DAYS = [
-    { value: 0, label: "Sunday", short: "Sun" },
+
     { value: 1, label: "Monday", short: "Mon" },
     { value: 2, label: "Tuesday", short: "Tue" },
     { value: 3, label: "Wednesday", short: "Wed" },
@@ -20,8 +20,25 @@ const DAYS = [
     { value: 6, label: "Saturday", short: "Sat" },
 ];
 
-// Weekdays for grid (Mon-Fri)
-const WEEKDAYS = DAYS.filter(d => d.value >= 1 && d.value <= 5);
+// Weekdays for grid (Mon-Sat)
+const WEEKDAYS = DAYS.filter(d => d.value >= 1 && d.value <= 6);
+
+// Get today's date in YYYY-MM-DD format (local timezone)
+const getTodayDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+// Get current time in HH:mm format
+const getCurrentTime = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
 
 // Format time from 24h to 12h
 const formatTime = (time) => {
@@ -44,6 +61,9 @@ const Availability = () => {
 
     // Tab state: "recurring" or "specific"
     const [activeTab, setActiveTab] = useState("recurring");
+
+    // Conflict/error toast state
+    const [conflictError, setConflictError] = useState(null);
 
     // Form states - Recurring
     const [slotForm, setSlotForm] = useState({
@@ -74,6 +94,16 @@ const Availability = () => {
         dispatch(fetchAllAvailability());
         dispatch(fetchMyStatus());
     }, [dispatch]);
+
+    // Watch for Redux errors and display conflict toast
+    useEffect(() => {
+        if (error) {
+            setConflictError(error);
+            // Auto-dismiss after 5 seconds
+            const timer = setTimeout(() => setConflictError(null), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
 
     // Handle status change
     const handleStatusChange = (newStatus) => {
@@ -107,20 +137,98 @@ const Availability = () => {
         });
     };
 
+    // Check for overlap with existing slots (client-side validation)
+    const checkForOverlap = (newStart, newEnd, dayOrDate, isRecurring) => {
+        // Check against existing slots
+        for (const slot of list) {
+            // For recurring slots, check same day of week
+            if (isRecurring && slot.dayOfWeek === dayOrDate) {
+                // Check time overlap
+                if (newStart < slot.endTime && newEnd > slot.startTime) {
+                    return `Time overlaps with existing slot (${formatTime(slot.startTime)} - ${formatTime(slot.endTime)})`;
+                }
+            }
+            // For specific dates, we rely on backend validation
+        }
+        return null; // No overlap
+    };
+
     // Submit recurring slot
     const handleAddSlot = (e) => {
         e.preventDefault();
-        if (slotForm.dayOfWeek === "" || !slotForm.startTime || !slotForm.endTime) return;
-        dispatch(addAvailability(slotForm));
+        // Check if dayOfWeek is selected (can be 0 for Sunday, so check for empty string)
+        const dayValue = slotForm.dayOfWeek;
+        if (dayValue === "" || dayValue === null || dayValue === undefined) {
+            setConflictError("Please select a day of the week");
+            return;
+        }
+        if (!slotForm.startTime || !slotForm.endTime) {
+            setConflictError("Please select both start and end time");
+            return;
+        }
+        if (slotForm.startTime >= slotForm.endTime) {
+            setConflictError("Start time must be before end time");
+            return;
+        }
+
+        // Client-side overlap check
+        const overlapError = checkForOverlap(slotForm.startTime, slotForm.endTime, Number(dayValue), true);
+        if (overlapError) {
+            setConflictError(overlapError);
+            return;
+        }
+
+        // Build payload with explicit dayOfWeek as number
+        const payload = {
+            availabilityType: "recurring",
+            dayOfWeek: Number(dayValue),
+            startTime: slotForm.startTime,
+            endTime: slotForm.endTime,
+            isRecurring: true,
+        };
+        console.log("📤 Submitting recurring slot:", payload);
+        dispatch(addAvailability(payload));
         setSlotForm({ ...slotForm, startTime: "", endTime: "" });
     };
 
     // Submit specific date slot
     const handleAddSpecificSlot = (e) => {
         e.preventDefault();
-        if (!specificForm.specificDate || !specificForm.startTime || !specificForm.endTime) return;
-        dispatch(addAvailability(specificForm));
-        setSpecificForm({ ...specificForm, startTime: "", endTime: "" });
+
+        // Debug log the form state
+        console.log("📋 Specific Form State:", specificForm);
+
+        const dateValue = specificForm.specificDate;
+        const startValue = specificForm.startTime;
+        const endValue = specificForm.endTime;
+
+        console.log("📋 Time comparison:", { startValue, endValue, isStartBeforeEnd: startValue < endValue });
+
+        if (!dateValue) {
+            setConflictError("Please select a date");
+            return;
+        }
+        if (!startValue || !endValue) {
+            setConflictError("Please select both start and end time");
+            return;
+        }
+        if (startValue >= endValue) {
+            setConflictError("Start time must be before end time");
+            return;
+        }
+
+        // Clear any previous errors before submitting
+        setConflictError(null);
+
+        // Build payload with the "date" field that backend expects
+        const payload = {
+            date: dateValue,
+            startTime: startValue,
+            endTime: endValue,
+        };
+        console.log("📤 Submitting specific date slot:", payload);
+        dispatch(addAvailability(payload));
+        setSpecificForm({ ...specificForm, specificDate: "", startTime: "", endTime: "" });
     };
 
     // Submit break
@@ -138,17 +246,27 @@ const Availability = () => {
         }
     };
 
-    // Build weekly grid data
+    // Build weekly grid data (includes both recurring and specific date slots)
     const weeklyGrid = useMemo(() => {
         const grid = {};
         WEEKDAYS.forEach(day => {
-            grid[day.value] = { slots: [], breaks: [] };
+            grid[day.value] = { slots: [], breaks: [], specificSlots: [] };
         });
 
-        // Add slots
+        // Add recurring slots
         list.forEach(slot => {
-            if (grid[slot.dayOfWeek]) {
+            if (slot.availabilityType === "recurring" && grid[slot.dayOfWeek]) {
                 grid[slot.dayOfWeek].slots.push(slot);
+            } else if (slot.availabilityType === "specific" && slot.specificDate) {
+                // For specific date slots, calculate the day of week from the date
+                const slotDate = new Date(slot.specificDate);
+                const dayOfWeek = slotDate.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
+                if (grid[dayOfWeek]) {
+                    grid[dayOfWeek].specificSlots.push({
+                        ...slot,
+                        formattedDate: slotDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    });
+                }
             }
         });
 
@@ -170,10 +288,30 @@ const Availability = () => {
                 <p className="text-slate-500">Manage your availability and review schedule</p>
             </div>
 
-            {/* Error Display */}
-            {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                    {error}
+            {/* Conflict/Error Toast */}
+            {conflictError && (
+                <div className="fixed top-4 right-4 z-50 max-w-md animate-pulse">
+                    <div className="bg-amber-50 border border-amber-300 rounded-xl shadow-lg p-4">
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                                <svg className="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-semibold text-amber-800">Time Slot Conflict</h4>
+                                <p className="text-sm text-amber-700 mt-1">{conflictError}</p>
+                            </div>
+                            <button
+                                onClick={() => setConflictError(null)}
+                                className="flex-shrink-0 text-amber-500 hover:text-amber-700"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -318,7 +456,7 @@ const Availability = () => {
                                     name="specificDate"
                                     value={specificForm.specificDate}
                                     onChange={handleSpecificChange}
-                                    min={new Date().toISOString().split('T')[0]}
+                                    min={getTodayDate()}
                                     className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
                                     required
                                 />
@@ -330,6 +468,7 @@ const Availability = () => {
                                     name="startTime"
                                     value={specificForm.startTime}
                                     onChange={handleSpecificChange}
+                                    min={specificForm.specificDate === getTodayDate() ? getCurrentTime() : undefined}
                                     className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
                                     required
                                 />
@@ -341,6 +480,7 @@ const Availability = () => {
                                     name="endTime"
                                     value={specificForm.endTime}
                                     onChange={handleSpecificChange}
+                                    min={specificForm.startTime || undefined}
                                     className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
                                     required
                                 />
@@ -499,17 +639,28 @@ const Availability = () => {
             {/* Weekly Availability Grid */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">Weekly Availability Grid</h3>
-                <div className="grid grid-cols-5 gap-4">
+                <div className="grid grid-cols-6 gap-4">
                     {WEEKDAYS.map((day) => (
                         <div key={day.value}>
                             <div className="text-sm font-semibold text-slate-600 mb-2">{day.label}</div>
                             <div className="space-y-2 min-h-[80px]">
-                                {/* Availability Slots (Green) */}
+                                {/* Recurring Slots (Green) */}
                                 {weeklyGrid[day.value]?.slots.map((slot) => (
                                     <div
                                         key={slot._id}
                                         className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded font-medium"
                                     >
+                                        {formatTimeRange(slot.startTime, slot.endTime)}
+                                    </div>
+                                ))}
+                                {/* Specific Date Slots (Blue) */}
+                                {weeklyGrid[day.value]?.specificSlots.map((slot) => (
+                                    <div
+                                        key={slot._id}
+                                        className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-medium"
+                                        title={`Specific: ${slot.formattedDate}`}
+                                    >
+                                        <div className="text-[10px] text-blue-600">{slot.formattedDate}</div>
                                         {formatTimeRange(slot.startTime, slot.endTime)}
                                     </div>
                                 ))}
@@ -523,12 +674,29 @@ const Availability = () => {
                                     </div>
                                 ))}
                                 {/* Empty state */}
-                                {weeklyGrid[day.value]?.slots.length === 0 && weeklyGrid[day.value]?.breaks.length === 0 && (
-                                    <div className="text-xs text-slate-300">-</div>
-                                )}
+                                {weeklyGrid[day.value]?.slots.length === 0 &&
+                                    weeklyGrid[day.value]?.specificSlots.length === 0 &&
+                                    weeklyGrid[day.value]?.breaks.length === 0 && (
+                                        <div className="text-xs text-slate-300">-</div>
+                                    )}
                             </div>
                         </div>
                     ))}
+                </div>
+                {/* Legend */}
+                <div className="flex gap-4 mt-4 pt-4 border-t border-slate-100 text-xs">
+                    <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-green-100 rounded"></div>
+                        <span className="text-slate-500">Recurring Weekly</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-blue-100 rounded"></div>
+                        <span className="text-slate-500">Specific Date</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-yellow-100 rounded"></div>
+                        <span className="text-slate-500">Break</span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchDashboardData } from "../../features/reviewer/reviewerSlice";
+import { fetchAllAvailability, fetchMyStatus } from "../../features/availability/availabilitySlice";
+import { DASHBOARD_TITLES } from "../../constants/appConfig";
 
 /* ============================================
    Skeleton Loader Component
@@ -29,9 +31,9 @@ const SkeletonListItem = () => (
 /* ============================================
    Stat Card Component
 ============================================ */
-const StatCard = React.memo(({ icon, value, label, color }) => (
+const StatCard = React.memo(({ icon, value, label }) => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <div className={`w-10 h-10 rounded-lg ${color} flex items-center justify-center mb-3`}>
+        <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center mb-3">
             {icon}
         </div>
         <div className="text-3xl font-bold text-slate-900">{value}</div>
@@ -47,10 +49,13 @@ const ReviewerDashboard = () => {
     const navigate = useNavigate();
     const { user } = useSelector((state) => state.auth);
     const { dashboard, dashboardLoading, dashboardError } = useSelector((state) => state.reviewer);
+    const { list: availabilityList, status: reviewerStatus, loading: availabilityLoading } = useSelector((state) => state.availability);
 
-    // Fetch dashboard data on mount
+    // Fetch dashboard data and availability on mount
     useEffect(() => {
         dispatch(fetchDashboardData());
+        dispatch(fetchAllAvailability());
+        dispatch(fetchMyStatus());
     }, [dispatch]);
 
     // Memoized stats
@@ -64,6 +69,33 @@ const ReviewerDashboard = () => {
     // Memoized lists
     const upcomingReviews = useMemo(() => dashboard?.upcomingReviews || [], [dashboard]);
     const pendingFeedbackList = useMemo(() => dashboard?.pendingFeedbackList || [], [dashboard]);
+
+    // Process availability data
+    const availabilitySummary = useMemo(() => {
+        const recurring = availabilityList.filter(s => s.availabilityType === "recurring");
+        const specific = availabilityList.filter(s => s.availabilityType === "specific" && new Date(s.specificDate) >= new Date());
+
+        // Get unique days with recurring slots
+        const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const recurringDays = [...new Set(recurring.map(s => dayNames[s.dayOfWeek]))];
+
+        // Get next 3 specific dates
+        const upcomingSpecific = specific
+            .sort((a, b) => new Date(a.specificDate) - new Date(b.specificDate))
+            .slice(0, 3)
+            .map(s => ({
+                ...s,
+                formattedDate: new Date(s.specificDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            }));
+
+        return {
+            totalSlots: availabilityList.length,
+            recurringCount: recurring.length,
+            specificCount: specific.length,
+            recurringDays,
+            upcomingSpecific,
+        };
+    }, [availabilityList]);
 
     // Format date helper
     const formatDate = (dateString) => {
@@ -125,7 +157,7 @@ const ReviewerDashboard = () => {
         <div className="space-y-8 max-w-6xl mx-auto">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-slate-900">Reviewer Dashboard</h1>
+                <h1 className="text-2xl font-bold text-slate-900">{DASHBOARD_TITLES.reviewer}</h1>
                 <p className="text-slate-500">Welcome back! Here's your review overview</p>
             </div>
 
@@ -141,30 +173,101 @@ const ReviewerDashboard = () => {
                 ) : (
                     <>
                         <StatCard
-                            icon={<svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                            icon={<svg className="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                             value={stats.reviewsThisWeek}
                             label="Reviews This Week"
-                            color="bg-purple-100"
                         />
                         <StatCard
-                            icon={<svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                            icon={<svg className="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                             value={stats.pendingFeedback}
                             label="Pending Feedback"
-                            color="bg-amber-100"
                         />
                         <StatCard
-                            icon={<svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                            icon={<svg className="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                             value={stats.totalCompleted}
                             label="Total Completed"
-                            color="bg-green-100"
                         />
                         <StatCard
-                            icon={<svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
+                            icon={<svg className="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
                             value={stats.avgRating.toFixed ? stats.avgRating.toFixed(1) : stats.avgRating}
                             label="Average Rating"
-                            color="bg-amber-100"
                         />
                     </>
+                )}
+            </div>
+
+            {/* Your Availability Section */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-slate-900">Your Availability</h3>
+                    <button
+                        onClick={() => navigate("/reviewer/availability")}
+                        className="text-sm text-teal-600 font-medium hover:text-teal-700"
+                    >
+                        Manage
+                    </button>
+                </div>
+
+                {availabilityLoading ? (
+                    <div className="animate-pulse flex gap-4">
+                        <div className="h-16 bg-slate-100 rounded-lg flex-1"></div>
+                        <div className="h-16 bg-slate-100 rounded-lg flex-1"></div>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {/* Status Badge */}
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm text-slate-600">Status:</span>
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${reviewerStatus === 'available' ? 'bg-green-100 text-green-700' :
+                                    reviewerStatus === 'busy' ? 'bg-yellow-100 text-yellow-700' :
+                                        reviewerStatus === 'dnd' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                {reviewerStatus === 'available' ? '🟢 Available' :
+                                    reviewerStatus === 'busy' ? '🟡 Busy' :
+                                        reviewerStatus === 'dnd' ? '🔴 Do Not Disturb' : reviewerStatus || 'Not Set'}
+                            </span>
+                        </div>
+
+                        {/* Availability Summary */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Recurring Days */}
+                            <div className="bg-green-50 border border-green-100 rounded-lg p-4">
+                                <div className="text-xs text-green-600 font-medium mb-2">WEEKLY RECURRING</div>
+                                {availabilitySummary.recurringDays.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1">
+                                        {availabilitySummary.recurringDays.map(day => (
+                                            <span key={day} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded font-medium">
+                                                {day}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-green-600">No recurring slots set</p>
+                                )}
+                                <p className="text-xs text-green-500 mt-2">{availabilitySummary.recurringCount} slot(s)</p>
+                            </div>
+
+                            {/* Specific Dates */}
+                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                                <div className="text-xs text-blue-600 font-medium mb-2">UPCOMING SPECIFIC DATES</div>
+                                {availabilitySummary.upcomingSpecific.length > 0 ? (
+                                    <div className="space-y-1">
+                                        {availabilitySummary.upcomingSpecific.map(slot => (
+                                            <div key={slot._id} className="text-sm text-blue-700">
+                                                <span className="font-medium">{slot.formattedDate}</span>
+                                                <span className="text-blue-500 ml-1">
+                                                    ({slot.startTime}-{slot.endTime})
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-blue-600">No specific dates set</p>
+                                )}
+                                <p className="text-xs text-blue-500 mt-2">{availabilitySummary.specificCount} upcoming</p>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
 
@@ -176,7 +279,7 @@ const ReviewerDashboard = () => {
                         <h3 className="font-bold text-slate-900">Upcoming Reviews</h3>
                         <button
                             onClick={() => navigate("/reviewer/requests")}
-                            className="text-sm text-purple-600 font-medium hover:text-purple-700"
+                            className="text-sm text-teal-600 font-medium hover:text-teal-700"
                         >
                             View All
                         </button>
@@ -191,7 +294,7 @@ const ReviewerDashboard = () => {
                             upcomingReviews.map((review) => (
                                 <div key={review._id} className="flex justify-between items-center bg-slate-50 p-4 rounded-xl">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold">
+                                        <div className="w-10 h-10 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-bold">
                                             {getInitials(review.student?.name)}
                                         </div>
                                         <div>
@@ -207,7 +310,7 @@ const ReviewerDashboard = () => {
                                     </div>
                                     <button
                                         onClick={() => handleJoin(review._id)}
-                                        className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                                        className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
                                     >
                                         Join
                                     </button>
@@ -228,7 +331,7 @@ const ReviewerDashboard = () => {
                         <h3 className="font-bold text-slate-900">Pending Feedback</h3>
                         <button
                             onClick={() => navigate("/reviewer/history")}
-                            className="text-sm text-purple-600 font-medium hover:text-purple-700"
+                            className="text-sm text-teal-600 font-medium hover:text-teal-700"
                         >
                             View All
                         </button>
@@ -243,7 +346,7 @@ const ReviewerDashboard = () => {
                             pendingFeedbackList.map((review) => (
                                 <div key={review._id} className="flex justify-between items-center bg-slate-50 p-4 rounded-xl">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-sm font-bold">
+                                        <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-sm font-bold">
                                             {getInitials(review.student?.name)}
                                         </div>
                                         <div>
@@ -255,7 +358,7 @@ const ReviewerDashboard = () => {
                                     </div>
                                     <button
                                         onClick={() => handleSubmitFeedback(review._id)}
-                                        className="px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors"
+                                        className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
                                     >
                                         Submit
                                     </button>
@@ -275,7 +378,7 @@ const ReviewerDashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
                     onClick={() => navigate("/reviewer/availability")}
-                    className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors"
+                    className="flex items-center justify-center gap-2 px-6 py-4 bg-teal-700 text-white rounded-xl font-medium hover:bg-teal-800 transition-colors"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Set Availability
