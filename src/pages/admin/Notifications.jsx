@@ -1,5 +1,39 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import api from "../../api/axios";
+
+/* ===========================================
+   CONSTANTS
+=========================================== */
+const STATUS_COLORS = {
+    pending: "bg-yellow-100 text-yellow-700",
+    "in-progress": "bg-blue-100 text-blue-700",
+    resolved: "bg-green-100 text-green-700",
+};
+
+const CATEGORY_LABELS = {
+    technical: "Technical",
+    academic: "Academic",
+    schedule: "Schedule",
+    suggestion: "Suggestion",
+    other: "Other",
+};
+
+const RECIPIENT_GROUPS = ["students", "advisors", "reviewers", "all_users"];
+
+const RECIPIENT_GROUP_LABELS = {
+    students: "Students",
+    reviewers: "Reviewers",
+    advisors: "Advisors",
+    all_users: "All Users",
+};
+
+// Date formatter
+const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+// Recipient group formatter
+const formatRecipientGroup = (group) =>
+    RECIPIENT_GROUP_LABELS[group] || group;
 
 const Notifications = () => {
     const [activeTab, setActiveTab] = useState("send");
@@ -23,17 +57,8 @@ const Notifications = () => {
     const [submitting, setSubmitting] = useState(false);
     const [issueCounts, setIssueCounts] = useState({ pending: 0, inProgress: 0, resolved: 0 });
 
-    useEffect(() => {
-        fetchSentNotifications();
-        fetchIssues();
-        fetchIssueCounts();
-    }, []);
-
-    useEffect(() => {
-        fetchIssues();
-    }, [statusFilter]);
-
-    const fetchSentNotifications = async () => {
+    // Memoized fetch functions
+    const fetchSentNotifications = useCallback(async () => {
         try {
             setFetchLoading(true);
             const response = await api.get("/notifications/admin/sent");
@@ -43,9 +68,18 @@ const Notifications = () => {
         } finally {
             setFetchLoading(false);
         }
-    };
+    }, []);
 
-    const fetchIssues = async () => {
+    const fetchIssueCounts = useCallback(async () => {
+        try {
+            const res = await api.get("/issues/counts");
+            setIssueCounts(res.data);
+        } catch (err) {
+            console.error("Failed to fetch counts:", err);
+        }
+    }, []);
+
+    const fetchIssues = useCallback(async () => {
         try {
             setIssuesLoading(true);
             const query = statusFilter ? `?status=${statusFilter}` : "";
@@ -56,18 +90,20 @@ const Notifications = () => {
         } finally {
             setIssuesLoading(false);
         }
-    };
+    }, [statusFilter]);
 
-    const fetchIssueCounts = async () => {
-        try {
-            const res = await api.get("/issues/counts");
-            setIssueCounts(res.data);
-        } catch (err) {
-            console.error("Failed to fetch counts:", err);
-        }
-    };
+    useEffect(() => {
+        fetchSentNotifications();
+        fetchIssues();
+        fetchIssueCounts();
+    }, [fetchSentNotifications, fetchIssueCounts]);
 
-    const handleSendNotification = async (e) => {
+    useEffect(() => {
+        fetchIssues();
+    }, [fetchIssues]);
+
+    // Memoized handlers
+    const handleSendNotification = useCallback(async (e) => {
         e.preventDefault();
         setError("");
         setSuccess("");
@@ -94,9 +130,9 @@ const Notifications = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [title, message, recipientGroup, fetchSentNotifications]);
 
-    const viewIssue = async (issueId) => {
+    const viewIssue = useCallback(async (issueId) => {
         try {
             const res = await api.get(`/issues/${issueId}`);
             setSelectedIssue(res.data.issue);
@@ -104,9 +140,9 @@ const Notifications = () => {
         } catch (err) {
             console.error("Failed to fetch issue:", err);
         }
-    };
+    }, []);
 
-    const handleRespond = async () => {
+    const handleRespond = useCallback(async () => {
         if (!response.trim() || !selectedIssue) return;
         try {
             setSubmitting(true);
@@ -119,9 +155,9 @@ const Notifications = () => {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [response, selectedIssue, viewIssue, fetchIssueCounts]);
 
-    const updateStatus = async (status) => {
+    const updateStatus = useCallback(async (status) => {
         if (!selectedIssue) return;
         try {
             await api.patch(`/issues/${selectedIssue._id}/status`, { status });
@@ -131,24 +167,7 @@ const Notifications = () => {
         } catch (err) {
             alert(err.response?.data?.message || "Failed to update status");
         }
-    };
-
-    const formatDate = (dateString) => new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const formatRecipientGroup = (group) => ({ students: "Students", reviewers: "Reviewers", advisors: "Advisors", all_users: "All Users" }[group] || group);
-
-    const statusColors = {
-        pending: "bg-yellow-100 text-yellow-700",
-        "in-progress": "bg-blue-100 text-blue-700",
-        resolved: "bg-green-100 text-green-700",
-    };
-
-    const categoryLabels = {
-        technical: "Technical",
-        academic: "Academic",
-        schedule: "Schedule",
-        suggestion: "Suggestion",
-        other: "Other",
-    };
+    }, [selectedIssue, viewIssue, fetchIssues, fetchIssueCounts]);
 
     return (
         <div className="space-y-6">
@@ -189,7 +208,7 @@ const Notifications = () => {
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-2">Send To</label>
                             <div className="flex flex-wrap gap-3">
-                                {["students", "advisors", "reviewers", "all_users"].map((group) => (
+                                {RECIPIENT_GROUPS.map((group) => (
                                     <label key={group} className={`flex items-center px-4 py-2 rounded-lg cursor-pointer border ${recipientGroup === group ? "bg-blue-50 border-blue-500 text-blue-700" : "border-slate-300"}`}>
                                         <input type="radio" name="recipientGroup" value={group} checked={recipientGroup === group} onChange={() => setRecipientGroup(group)} className="sr-only" />
                                         {formatRecipientGroup(group)}
@@ -288,12 +307,12 @@ const Notifications = () => {
                                         <div key={issue._id} onClick={() => viewIssue(issue._id)} className={`p-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 ${selectedIssue?._id === issue._id ? "bg-blue-50" : ""}`}>
                                             <div className="flex items-center justify-between">
                                                 <span className="font-medium text-slate-900">{issue.subject}</span>
-                                                <span className={`text-xs px-2 py-1 rounded-full ${statusColors[issue.status]}`}>{issue.status}</span>
+                                                <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[issue.status]}`}>{issue.status}</span>
                                             </div>
                                             <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                                                 <span className="font-medium">{issue.studentId?.name}</span>
                                                 <span>•</span>
-                                                <span>{categoryLabels[issue.category]}</span>
+                                                <span>{CATEGORY_LABELS[issue.category]}</span>
                                                 <span>•</span>
                                                 <span>{new Date(issue.createdAt).toLocaleDateString()}</span>
                                             </div>
@@ -309,12 +328,12 @@ const Notifications = () => {
                                     <div className="p-4 border-b border-slate-200">
                                         <div className="flex items-center justify-between">
                                             <h3 className="font-medium text-slate-900">{selectedIssue.subject}</h3>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${statusColors[selectedIssue.status]}`}>{selectedIssue.status}</span>
+                                            <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[selectedIssue.status]}`}>{selectedIssue.status}</span>
                                         </div>
                                         <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                                             <span>From: {selectedIssue.studentId?.name}</span>
                                             <span>•</span>
-                                            <span>{categoryLabels[selectedIssue.category]}</span>
+                                            <span>{CATEGORY_LABELS[selectedIssue.category]}</span>
                                         </div>
                                     </div>
                                     <div className="p-4 border-b border-slate-100 bg-slate-50">

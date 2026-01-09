@@ -10,6 +10,32 @@ import {
 } from "./availabilityApi";
 
 /* ===========================================
+   INTERNAL HELPERS
+=========================================== */
+
+// Standard error extractor for thunks
+const extractError = (err, fallback) =>
+  err?.response?.data?.message || fallback;
+
+// Standard pending reducer
+const setPending = (state) => {
+  state.loading = true;
+  state.error = null;
+};
+
+// Standard rejected reducer
+const setRejected = (state, action) => {
+  state.loading = false;
+  state.error = action.payload;
+};
+
+// Standard fulfilled base (resets loading and error)
+const setFulfilled = (state) => {
+  state.loading = false;
+  state.error = null;
+};
+
+/* ===========================================
    ASYNC THUNKS
 =========================================== */
 
@@ -19,11 +45,9 @@ export const fetchAllAvailability = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const res = await getAllAvailability();
-      return res.data; // { availability: [], breaks: [] }
+      return res.data;
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err?.response?.data?.message || "Failed to load availability"
-      );
+      return thunkAPI.rejectWithValue(extractError(err, "Failed to load availability"));
     }
   }
 );
@@ -36,9 +60,7 @@ export const fetchMyAvailability = createAsyncThunk(
       const res = await getMyAvailability();
       return res?.data ?? [];
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err?.response?.data?.message || "Failed to load availability"
-      );
+      return thunkAPI.rejectWithValue(extractError(err, "Failed to load availability"));
     }
   }
 );
@@ -51,9 +73,7 @@ export const addAvailability = createAsyncThunk(
       const res = await createAvailability(data);
       return res.data.availability;
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err?.response?.data?.message || "Failed to add availability"
-      );
+      return thunkAPI.rejectWithValue(extractError(err, "Failed to add availability"));
     }
   }
 );
@@ -66,9 +86,7 @@ export const removeAvailability = createAsyncThunk(
       await deleteAvailability(id);
       return id;
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err?.response?.data?.message || "Failed to delete availability"
-      );
+      return thunkAPI.rejectWithValue(extractError(err, "Failed to delete availability"));
     }
   }
 );
@@ -81,9 +99,7 @@ export const fetchMyStatus = createAsyncThunk(
       const res = await getMyStatus();
       return res.data.status;
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err?.response?.data?.message || "Failed to load status"
-      );
+      return thunkAPI.rejectWithValue(extractError(err, "Failed to load status"));
     }
   }
 );
@@ -96,9 +112,7 @@ export const updateMyStatus = createAsyncThunk(
       await updateStatus(status);
       return status;
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err?.response?.data?.message || "Failed to update status"
-      );
+      return thunkAPI.rejectWithValue(extractError(err, "Failed to update status"));
     }
   }
 );
@@ -111,12 +125,11 @@ export const addBreak = createAsyncThunk(
       const res = await createBreak(data);
       return res.data.break;
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err?.response?.data?.message || "Failed to add break"
-      );
+      return thunkAPI.rejectWithValue(extractError(err, "Failed to add break"));
     }
   }
 );
+
 
 /* ===========================================
    SLICE

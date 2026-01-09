@@ -1,10 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 import { APP_NAME, APP_TAGLINE } from "../constants/appConfig";
+
+// Role to dashboard path mapping
+const ROLE_DASHBOARD_PATHS = {
+  admin: "/admin/dashboard",
+  reviewer: "/reviewer/dashboard",
+  student: "/student/dashboard",
+  advisor: "/advisor/dashboard",
+};
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,19 +28,17 @@ const Login = () => {
 
   const { isAuthenticated, user, loading, error } = useSelector((state) => state.auth);
 
-  const navigateToDashboard = (role) => {
-    if (role === "admin") navigate("/admin/dashboard", { replace: true });
-    else if (role === "reviewer") navigate("/reviewer/dashboard", { replace: true });
-    else if (role === "student") navigate("/student/dashboard", { replace: true });
-    else if (role === "advisor") navigate("/advisor/dashboard", { replace: true });
-    else navigate("/", { replace: true });
-  };
+  // Memoized navigation function
+  const navigateToDashboard = useCallback((role) => {
+    const path = ROLE_DASHBOARD_PATHS[role] || "/";
+    navigate(path, { replace: true });
+  }, [navigate]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
       navigateToDashboard(user.role);
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigateToDashboard]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

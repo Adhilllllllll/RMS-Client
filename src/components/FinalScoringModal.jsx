@@ -42,14 +42,14 @@ const FinalScoringModal = ({ isOpen, onClose, onSubmit, review, reviewerEvaluati
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Validate final score
-        if (finalScore < 0 || finalScore > 10) {
-            setErrors({ finalScore: "Final score must be between 0 and 10" });
-            return;
-        }
+        // Calculate final score as average of (reviewer avg + attendance + discipline)
+        const reviewerAvg = useAdjusted
+            ? parseFloat(calculateAdjustedAverage())
+            : (reviewerEvaluation?.averageScore || 0);
+        const calculatedFinalScore = parseFloat(((reviewerAvg + attendance + discipline) / 3).toFixed(1));
 
         onSubmit({
-            finalScore,
+            finalScore: calculatedFinalScore,
             attendance,
             discipline,
             adjustedScores: useAdjusted ? adjustedScores : null,
@@ -220,25 +220,47 @@ const FinalScoringModal = ({ isOpen, onClose, onSubmit, review, reviewerEvaluati
                         </div>
                     </div>
 
-                    {/* Final Score Section */}
+                    {/* Final Score Section - Auto-Calculated Average */}
                     <div className="mb-6">
                         <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
                             <svg className="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                             </svg>
                             Final Score
+                            <span className="text-xs font-normal text-slate-400">(Auto-calculated average)</span>
                         </h3>
 
                         <div className="bg-teal-50 p-5 rounded-xl border border-teal-100">
-                            <ScoreSlider
-                                label="Overall Final Score"
-                                value={finalScore}
-                                onChange={setFinalScore}
-                                min={SCORE_CONFIG.min}
-                                max={SCORE_CONFIG.max}
-                                step={SCORE_CONFIG.step}
-                                error={errors.finalScore}
-                            />
+                            {/* Calculate the average: (reviewer avg + attendance + discipline) / 3 */}
+                            {(() => {
+                                const reviewerAvg = useAdjusted
+                                    ? parseFloat(calculateAdjustedAverage())
+                                    : (reviewerEvaluation?.averageScore || 0);
+                                const calculatedFinal = ((reviewerAvg + attendance + discipline) / 3).toFixed(1);
+
+                                // Update finalScore state via effect instead of directly here
+                                return (
+                                    <div className="text-center">
+                                        <div className="text-sm text-teal-600 mb-2">
+                                            Average of: Reviewer Score ({reviewerAvg.toFixed ? reviewerAvg.toFixed(1) : reviewerAvg}) + Attendance ({attendance}) + Discipline ({discipline})
+                                        </div>
+                                        <div className={`text-5xl font-bold ${calculatedFinal >= 8 ? "text-green-600" :
+                                            calculatedFinal >= 6 ? "text-yellow-600" :
+                                                "text-red-600"
+                                            }`}>
+                                            {calculatedFinal}
+                                            <span className="text-2xl text-slate-500">/10</span>
+                                        </div>
+                                        <div className={`mt-2 text-sm font-medium ${calculatedFinal >= 8 ? "text-green-600" :
+                                            calculatedFinal >= 6 ? "text-yellow-600" :
+                                                "text-red-600"
+                                            }`}>
+                                            {calculatedFinal >= 8 ? "Excellent" :
+                                                calculatedFinal >= 6 ? "Average" : "Needs Improvement"}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
 

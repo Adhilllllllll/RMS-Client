@@ -2,6 +2,22 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
 
 /* ======================
+   INTERNAL HELPERS
+====================== */
+
+// Standard error extractor for thunks
+const extractError = (err, fallback) =>
+  err?.response?.data?.message || fallback;
+
+// Role to profile endpoint mapping
+const ROLE_ENDPOINTS = {
+  advisor: "/advisor/me",
+  reviewer: "/reviews/reviewer/profile",
+  admin: "/admin/me",
+  student: null, // Students don't have a profile refresh endpoint yet
+};
+
+/* ======================
    LOGIN THUNK
 ====================== */
 export const loginUser = createAsyncThunk(
@@ -11,15 +27,13 @@ export const loginUser = createAsyncThunk(
       const res = await api.post("/auth/login", { email, password });
       return res.data;
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err?.response?.data?.message || "Login failed"
-      );
+      return thunkAPI.rejectWithValue(extractError(err, "Login failed"));
     }
   }
 );
 
 /* ======================
-   REFRESH USER THUNK (fetch latest profile on app load)
+   REFRESH USER THUNK
 ====================== */
 export const refreshUser = createAsyncThunk(
   "auth/refreshUser",
@@ -27,29 +41,14 @@ export const refreshUser = createAsyncThunk(
     try {
       const state = thunkAPI.getState();
       const role = state.auth.user?.role;
-
-      // Call appropriate profile endpoint based on role
-      let endpoint = null;
-      if (role === "advisor") {
-        endpoint = "/advisor/me";
-      } else if (role === "reviewer") {
-        endpoint = "/reviews/reviewer/profile";
-      } else if (role === "admin") {
-        endpoint = "/admin/me";
-      } else if (role === "student") {
-        // Students don't have a profile refresh endpoint yet
-        // Just return current user data
-        return thunkAPI.getState().auth.user;
-      }
+      const endpoint = ROLE_ENDPOINTS[role];
 
       if (!endpoint) {
-        return thunkAPI.getState().auth.user;
+        return state.auth.user;
       }
 
       const res = await api.get(endpoint);
-      // Extract user from different response structures
-      const user = res.data.advisor || res.data.reviewer || res.data.user || res.data;
-      return user;
+      return res.data.advisor || res.data.reviewer || res.data.user || res.data;
     } catch (err) {
       // Don't reject - just return current user if refresh fails
       return thunkAPI.getState().auth.user;

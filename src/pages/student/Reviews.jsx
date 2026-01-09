@@ -41,10 +41,10 @@ const ReportModal = React.memo(({ report, onClose, loading }) => {
     if (!report && !loading) return null;
 
     // Get score color based on value (0-10 scale)
+    // Green (≥8), Yellow (6-7), Red (<6)
     const getScoreColor = (score) => {
         if (score >= 8) return "bg-green-100 text-green-700";
-        if (score >= 6) return "bg-teal-100 text-teal-700";
-        if (score >= 4) return "bg-amber-100 text-amber-700";
+        if (score >= 6) return "bg-yellow-100 text-yellow-700";
         return "bg-red-100 text-red-700";
     };
 
@@ -230,10 +230,11 @@ const Reviews = () => {
         dispatch(clearSelectedReport());
     }, [dispatch]);
 
-    // Score badge color
+    // Score badge color - based on marks (0-10 scale, converted to %)
+    // Green (≥80% = 8+), Yellow (60-79% = 6-7.9), Red (<60% = <6)
     const getScoreColor = useCallback((score) => {
         if (score >= 80) return "bg-green-100 text-green-700";
-        if (score >= 60) return "bg-amber-100 text-amber-700";
+        if (score >= 60) return "bg-yellow-100 text-yellow-700";
         return "bg-red-100 text-red-700";
     }, []);
 

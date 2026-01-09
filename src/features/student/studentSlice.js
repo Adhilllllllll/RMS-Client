@@ -19,6 +19,14 @@ import {
 } from "./studentApi";
 
 /* ===========================================
+   INTERNAL HELPERS
+=========================================== */
+
+// Standard error extractor for thunks
+const extractError = (err, fallback) =>
+    err?.response?.data?.message || fallback;
+
+/* ===========================================
    ASYNC THUNKS
 =========================================== */
 
@@ -33,9 +41,7 @@ export const fetchUpcomingReviews = createAsyncThunk(
                 nextExpectedReview: res.data.nextExpectedReview || null,
             };
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch upcoming reviews"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch upcoming reviews"));
         }
     }
 );
@@ -48,9 +54,7 @@ export const fetchReviewHistory = createAsyncThunk(
             const res = await getReviewHistory();
             return res.data.reviewHistory || [];
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch review history"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch review history"));
         }
     }
 );
@@ -63,9 +67,7 @@ export const fetchReviewReport = createAsyncThunk(
             const res = await getReviewReport(reviewId);
             return res.data.report;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch review report"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch review report"));
         }
     }
 );
@@ -78,9 +80,7 @@ export const fetchStudentProgress = createAsyncThunk(
             const res = await getStudentProgress();
             return res.data;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch progress data"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch progress data"));
         }
     }
 );
@@ -93,9 +93,7 @@ export const fetchStudentTasks = createAsyncThunk(
             const res = await getStudentTasks();
             return res.data.tasks || [];
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch tasks"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch tasks"));
         }
     }
 );
@@ -108,9 +106,7 @@ export const uploadTaskFile = createAsyncThunk(
             const res = await uploadTaskAttachment(taskId, formData);
             return res.data.task;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to upload attachment"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to upload attachment"));
         }
     }
 );
@@ -123,9 +119,7 @@ export const fetchStudentWorkshops = createAsyncThunk(
             const res = await getStudentWorkshops();
             return res.data.workshops || [];
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch workshops"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch workshops"));
         }
     }
 );
@@ -138,9 +132,7 @@ export const joinWorkshop = createAsyncThunk(
             const res = await markWorkshopAttendance(workshopId);
             return { workshopId, workshop: res.data.workshop };
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to join workshop"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to join workshop"));
         }
     }
 );
@@ -153,9 +145,7 @@ export const fetchSyllabus = createAsyncThunk(
             const res = await getSyllabusWeeks();
             return res.data.weeks || [];
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch syllabus"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch syllabus"));
         }
     }
 );
@@ -168,9 +158,7 @@ export const fetchChecklist = createAsyncThunk(
             const res = await getStudentChecklist();
             return res.data.checklist || [];
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch checklist"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch checklist"));
         }
     }
 );
@@ -183,9 +171,7 @@ export const toggleChecklistItemThunk = createAsyncThunk(
             const res = await toggleChecklistItem(itemId);
             return res.data.item;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to update item"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to update item"));
         }
     }
 );
@@ -198,9 +184,7 @@ export const uploadChecklistFile = createAsyncThunk(
             const res = await uploadChecklistAttachment(itemId, formData);
             return res.data.item;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to upload attachment"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to upload attachment"));
         }
     }
 );
@@ -213,9 +197,7 @@ export const uploadAdditionalDocument = createAsyncThunk(
             const res = await uploadDocument(formData);
             return res.data.document;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to upload document"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to upload document"));
         }
     }
 );
@@ -231,9 +213,7 @@ export const fetchNotifications = createAsyncThunk(
                 unreadCount: res.data.unreadCount || 0,
             };
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch notifications"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch notifications"));
         }
     }
 );
@@ -246,9 +226,7 @@ export const markNotificationRead = createAsyncThunk(
             await markNotificationAsRead(notificationId);
             return notificationId;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to mark as read"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to mark as read"));
         }
     }
 );
@@ -261,9 +239,7 @@ export const markAllNotificationsRead = createAsyncThunk(
             await markAllNotificationsAsRead();
             return true;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to mark all as read"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to mark all as read"));
         }
     }
 );

@@ -8,6 +8,28 @@ import {
 } from "./reviewerApi";
 
 /* ===========================================
+   INTERNAL HELPERS
+=========================================== */
+
+// Standard error extractor for thunks
+const extractError = (err, fallback) =>
+    err?.response?.data?.message || fallback;
+
+// Standard loading state setter
+const setLoading = (state, isLoading = true) => {
+    state.loading = isLoading;
+    if (isLoading) state.error = null;
+};
+
+// Update review status in list by ID
+const updateReviewStatus = (state, reviewId, status) => {
+    const index = state.reviews.findIndex(r => r._id === reviewId);
+    if (index !== -1) {
+        state.reviews[index].status = status;
+    }
+};
+
+/* ===========================================
    ASYNC THUNKS
 =========================================== */
 
@@ -19,9 +41,7 @@ export const fetchReviewerReviews = createAsyncThunk(
             const res = await getMyReviews();
             return res.data || [];
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch reviews"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch reviews"));
         }
     }
 );
@@ -34,9 +54,7 @@ export const fetchSingleReview = createAsyncThunk(
             const res = await getSingleReview(reviewId);
             return res.data.review;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch review"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch review"));
         }
     }
 );
@@ -49,9 +67,7 @@ export const acceptReviewRequest = createAsyncThunk(
             await acceptReview(reviewId);
             return reviewId;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to accept review"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to accept review"));
         }
     }
 );
@@ -64,14 +80,12 @@ export const rejectReviewRequest = createAsyncThunk(
             await rejectReview(reviewId, reason);
             return reviewId;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to reject review"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to reject review"));
         }
     }
 );
 
-// Fetch dashboard data (stats, upcoming reviews, pending feedback)
+// Fetch dashboard data
 export const fetchDashboardData = createAsyncThunk(
     "reviewer/fetchDashboardData",
     async (_, thunkAPI) => {
@@ -79,9 +93,7 @@ export const fetchDashboardData = createAsyncThunk(
             const res = await getReviewerDashboard();
             return res.data;
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err?.response?.data?.message || "Failed to fetch dashboard data"
-            );
+            return thunkAPI.rejectWithValue(extractError(err, "Failed to fetch dashboard data"));
         }
     }
 );
@@ -89,6 +101,7 @@ export const fetchDashboardData = createAsyncThunk(
 /* ===========================================
    SLICE
 =========================================== */
+
 
 const reviewerSlice = createSlice({
     name: "reviewer",

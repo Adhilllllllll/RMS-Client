@@ -1,7 +1,55 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import CreateUserModal from "../../components/CreateUserModal";
 import api from "../../api/axios";
 
+/* ======================================================
+   MEMOIZED SUB-COMPONENTS
+====================================================== */
+
+// Memoized user row to prevent re-renders
+const UserRow = memo(({ user, onView, onEdit, onDelete, getAvatarUrl }) => (
+    <tr className="hover:bg-slate-50">
+        <td className="px-6 py-4 flex items-center gap-3">
+            <img src={getAvatarUrl(user)} alt="" className="w-8 h-8 rounded-full bg-slate-200" />
+            <div>
+                <div className="font-medium text-slate-900 text-sm">{user.name}</div>
+                <div className="text-xs text-slate-500 capitalize">{user.role}</div>
+            </div>
+        </td>
+        <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
+        <td className="px-6 py-4 text-sm text-slate-600">{user.domain || "-"}</td>
+        <td className="px-6 py-4">
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {user.status === 'active' ? 'Active' : 'Inactive'}
+            </span>
+        </td>
+        <td className="px-6 py-4 text-right flex justify-end gap-2 text-slate-400">
+            <button className="hover:text-blue-600" onClick={() => onView(user)} title="View">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            </button>
+            <button className="hover:text-amber-600" onClick={() => onEdit(user)} title="Edit">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+            </button>
+            <button className="hover:text-red-600" onClick={() => onDelete(user)} title="Delete">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            </button>
+        </td>
+    </tr>
+));
+
+/* ======================================================
+   CONSTANTS
+====================================================== */
+const TAB_TO_ROLE = {
+    "Advisors": "advisor",
+    "Reviewers": "reviewer",
+    "Students": "student",
+};
+const TABS = ["Advisors", "Reviewers", "Students"];
+
+/* ======================================================
+   MAIN COMPONENT
+====================================================== */
 const ManageUsers = () => {
     const [activeTab, setActiveTab] = useState("Advisors");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -17,22 +65,11 @@ const ManageUsers = () => {
     const [actionLoading, setActionLoading] = useState(false);
     const [editForm, setEditForm] = useState({ name: "", domain: "" });
 
-    // Map tab names to role filters
-    const tabToRole = {
-        "Advisors": "advisor",
-        "Reviewers": "reviewer",
-        "Students": "student",
-    };
-
-    // Fetch users when tab changes
-    useEffect(() => {
-        fetchUsers();
-    }, [activeTab, statusFilter]);
-
-    const fetchUsers = async () => {
+    // Memoized fetch function
+    const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
-            const role = tabToRole[activeTab];
+            const role = TAB_TO_ROLE[activeTab];
             const params = new URLSearchParams();
             params.append("role", role);
             if (statusFilter) params.append("status", statusFilter);
@@ -44,53 +81,54 @@ const ManageUsers = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTab, statusFilter]);
 
-    const handleUserCreated = () => {
-        fetchUsers(); // Refresh user list
-    };
+    // Fetch users when tab or filter changes
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
 
-    // Filter users by search query
-    const filteredUsers = users.filter(user => {
-        if (!searchQuery) return true;
+    // Memoized filtered users
+    const filteredUsers = useMemo(() => {
+        if (!searchQuery) return users;
         const query = searchQuery.toLowerCase();
-        return (
+        return users.filter(user =>
             user.name?.toLowerCase().includes(query) ||
             user.email?.toLowerCase().includes(query)
         );
-    });
+    }, [users, searchQuery]);
 
-    // Action handlers
-    const handleView = (user) => {
-        setViewModal({ open: true, user });
-    };
-
-    const handleEdit = (user) => {
-        setEditForm({
-            name: user.name || "",
-            domain: user.domain || "",
-        });
+    // Memoized handlers
+    const handleUserCreated = useCallback(() => fetchUsers(), [fetchUsers]);
+    const handleView = useCallback((user) => setViewModal({ open: true, user }), []);
+    const handleEdit = useCallback((user) => {
+        setEditForm({ name: user.name || "", domain: user.domain || "" });
         setEditModal({ open: true, user });
-    };
+    }, []);
+    const handleDelete = useCallback((user) => setDeleteModal({ open: true, user }), []);
 
-    const handleDelete = (user) => {
-        setDeleteModal({ open: true, user });
-    };
+    // Memoized avatar URL generator
+    const getAvatarUrl = useCallback((user) => {
+        if (user.avatar) return user.avatar;
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+    }, []);
 
-    const handleToggleStatus = async (user) => {
+    // Toggle status handler
+    const handleToggleStatus = useCallback(async (user) => {
         try {
             setActionLoading(true);
             const type = user.isStudent ? "student" : "user";
             await api.patch(`/admin/users/${user._id}/status?type=${type}`);
-            fetchUsers(); // Refresh
+            fetchUsers();
         } catch (err) {
             console.error("Failed to toggle status:", err);
         } finally {
             setActionLoading(false);
         }
-    };
+    }, [fetchUsers]);
 
-    const confirmEdit = async () => {
+    // Confirm edit handler
+    const confirmEdit = useCallback(async () => {
         try {
             setActionLoading(true);
             const user = editModal.user;
@@ -103,9 +141,10 @@ const ManageUsers = () => {
         } finally {
             setActionLoading(false);
         }
-    };
+    }, [editForm, editModal.user, fetchUsers]);
 
-    const confirmDelete = async () => {
+    // Confirm delete handler
+    const confirmDelete = useCallback(async () => {
         try {
             setActionLoading(true);
             const user = deleteModal.user;
@@ -118,12 +157,8 @@ const ManageUsers = () => {
         } finally {
             setActionLoading(false);
         }
-    };
+    }, [deleteModal.user, fetchUsers]);
 
-    const getAvatarUrl = (user) => {
-        if (user.avatar) return user.avatar;
-        return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
-    };
 
     return (
         <>

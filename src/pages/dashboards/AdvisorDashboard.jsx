@@ -67,7 +67,10 @@ const AdvisorDashboard = () => {
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="text-slate-500 text-sm font-medium uppercase tracking-wide">Avg Progress</div>
-                    <div className="mt-2 text-3xl font-bold text-teal-600">
+                    <div className={`mt-2 text-3xl font-bold ${(stats.avgProgress || 0) >= 80 ? "text-green-600" :
+                            (stats.avgProgress || 0) >= 60 ? "text-yellow-600" :
+                                "text-red-600"
+                        }`}>
                         {loading.stats ? (
                             <div className="h-9 w-16 bg-slate-200 animate-pulse rounded"></div>
                         ) : `${stats.avgProgress}%`}

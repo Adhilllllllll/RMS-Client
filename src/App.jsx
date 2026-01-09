@@ -38,6 +38,7 @@ import AdvisorAnalytics from "./pages/advisor/ReportsAnalytics";
 import AdvisorProfile from "./pages/advisor/Profile";
 import AdvisorChat from "./pages/advisor/Chat";
 import AdvisorIssues from "./pages/advisor/Issues";
+import AdvisorTasks from "./pages/advisor/Tasks";
 import { useSelector, useDispatch } from "react-redux";
 import { refreshUser } from "./features/auth/authSlice";
 import { initializeSocket, disconnectSocket } from "./socket/socketClient";
@@ -361,6 +362,16 @@ function App() {
             <ProtectedRoute role="advisor">
               <Layout>
                 <AdvisorStudents />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/advisor/tasks"
+          element={
+            <ProtectedRoute role="advisor">
+              <Layout>
+                <AdvisorTasks />
               </Layout>
             </ProtectedRoute>
           }

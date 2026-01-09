@@ -176,8 +176,11 @@ const StudentProfileModal = ({ isOpen, onClose, studentId }) => {
                                         <div className="text-xs text-slate-500">Pending</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-2xl font-bold text-blue-600">{student.overallScore || 0}%</div>
-                                        <div className="text-xs text-slate-500">Score</div>
+                                        <div className={`text-2xl font-bold ${(student.overallScore || 0) >= 80 ? "text-green-600" :
+                                                (student.overallScore || 0) >= 60 ? "text-yellow-600" :
+                                                    "text-red-600"
+                                            }`}>{student.overallScore || 0}%</div>
+                                        <div className="text-xs text-slate-500">Overall Score</div>
                                     </div>
                                 </div>
                             </div>

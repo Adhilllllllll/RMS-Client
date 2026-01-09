@@ -306,7 +306,10 @@ const Reviews = () => {
 
                                             {/* View Final Score - Only for scored reviews */}
                                             {review.status?.toLowerCase() === "scored" && (
-                                                <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded border border-green-200">
+                                                <span className={`px-3 py-1 text-xs font-medium rounded border ${review.marks >= 8 ? "bg-green-50 text-green-700 border-green-200" :
+                                                        review.marks >= 6 ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                                                            "bg-red-50 text-red-700 border-red-200"
+                                                    }`}>
                                                     Scored: {review.marks}/10
                                                 </span>
                                             )}

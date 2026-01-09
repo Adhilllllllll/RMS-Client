@@ -1,45 +1,51 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { DASHBOARD_TITLES } from "../../constants/appConfig";
 
 /* ============================================
-   Stat Card Component
+   CONSTANTS
 ============================================ */
-const StatCard = ({ title, value, change, changeType = "positive", icon }) => {
-    return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-slate-500">{title}</span>
-                {icon && (
-                    <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
-                        {icon}
-                    </div>
-                )}
-            </div>
-            <div className="text-3xl font-bold text-slate-900">{value}</div>
-            {change !== undefined && (
-                <div className={`text-sm mt-1 ${changeType === "positive" ? "text-teal-600" : "text-red-600"}`}>
-                    {changeType === "positive" ? "+" : ""}{change}%
+const WEEK_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"];
+
+/* ============================================
+   Stat Card Component (Memoized)
+============================================ */
+const StatCard = memo(({ title, value, change, changeType = "positive", icon }) => (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium text-slate-500">{title}</span>
+            {icon && (
+                <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+                    {icon}
                 </div>
             )}
         </div>
-    );
-};
-
+        <div className="text-3xl font-bold text-slate-900">{value}</div>
+        {change !== undefined && (
+            <div className={`text-sm mt-1 ${changeType === "positive" ? "text-teal-600" : "text-red-600"}`}>
+                {changeType === "positive" ? "+" : ""}{change}%
+            </div>
+        )}
+    </div>
+));
 
 /* ============================================
-   Simple Line Chart Component
+   Simple Line Chart Component (Memoized)
 ============================================ */
-const LineChart = ({ data, labels }) => {
+const LineChart = memo(({ data, labels }) => {
     const maxValue = Math.max(...data, 1);
-    const points = data.map((value, index) => ({
-        x: (index / (data.length - 1 || 1)) * 100,
-        y: 100 - (value / maxValue) * 80,
-    }));
+    const points = useMemo(() =>
+        data.map((value, index) => ({
+            x: (index / (data.length - 1 || 1)) * 100,
+            y: 100 - (value / maxValue) * 80,
+        })), [data, maxValue]);
 
-    const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+    const pathD = useMemo(() =>
+        points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" "),
+        [points]);
 
     return (
         <div className="relative h-48">
@@ -71,12 +77,12 @@ const LineChart = ({ data, labels }) => {
             </div>
         </div>
     );
-};
+});
 
 /* ============================================
-   Simple Bar Chart Component
+   Simple Bar Chart Component (Memoized)
 ============================================ */
-const BarChart = ({ data, labels }) => {
+const BarChart = memo(({ data, labels }) => {
     const maxValue = Math.max(...data, 1);
 
     return (
@@ -92,12 +98,12 @@ const BarChart = ({ data, labels }) => {
             ))}
         </div>
     );
-};
+});
 
 /* ============================================
-   Quick Action Button
+   Quick Action Button (Memoized)
 ============================================ */
-const QuickActionButton = ({ icon, label, onClick }) => (
+const QuickActionButton = memo(({ icon, label, onClick }) => (
     <button
         onClick={onClick}
         className="flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-all"
@@ -107,7 +113,29 @@ const QuickActionButton = ({ icon, label, onClick }) => (
         </div>
         <span className="text-sm font-medium text-slate-700">{label}</span>
     </button>
-);
+));
+
+/* ============================================
+   Skeleton Loader (Memoized)
+============================================ */
+const DashboardSkeleton = memo(() => (
+    <div className="space-y-6">
+        <div>
+            <div className="h-8 bg-slate-200 rounded w-48 animate-pulse mb-2"></div>
+            <div className="h-4 bg-slate-200 rounded w-64 animate-pulse"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 animate-pulse">
+                    <div className="h-4 bg-slate-200 rounded w-24 mb-4"></div>
+                    <div className="h-8 bg-slate-200 rounded w-16 mb-2"></div>
+                    <div className="h-3 bg-slate-200 rounded w-12"></div>
+                </div>
+            ))}
+        </div>
+    </div>
+));
+
 
 /* ============================================
    Main Admin Dashboard Component
@@ -129,15 +157,10 @@ const AdminDashboard = () => {
     const [userGrowth, setUserGrowth] = useState([]);
     const [periodFilter, setPeriodFilter] = useState("weekly");
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, [periodFilter]);
-
-    const fetchDashboardData = async () => {
+    // Memoized fetch function
+    const fetchDashboardData = useCallback(async () => {
         try {
             setLoading(true);
-
-            // Fetch dashboard counts
             const countsRes = await api.get("/admin/dashboard-counts");
             const counts = countsRes.data;
 
@@ -150,73 +173,34 @@ const AdminDashboard = () => {
                 pendingApprovals: counts.pendingReviews || 0,
             });
 
-            // Generate sample chart data (replace with actual API calls if available)
+            // Sample chart data
             const weeklyData = [20, 35, 45, 30, 55, 42, 60];
             const monthlyData = [40, 55, 35, 70, 50, 65, 45, 80];
-
             setReviewProgress(periodFilter === "weekly" ? weeklyData : monthlyData);
             setUserGrowth([40, 55, 35, 60, 50, 65, 45, 70]);
-
         } catch (err) {
             console.error("Failed to fetch dashboard data:", err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [periodFilter]);
 
-    const weekLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"];
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
 
-    // Icons
-    const userIcon = (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-    );
+    // Memoized icons
+    const icons = useMemo(() => ({
+        user: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
+        review: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
+        clock: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+        addUser: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>,
+        list: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>,
+    }), []);
 
-    const reviewIcon = (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-    );
+    // Early return for loading
+    if (loading) return <DashboardSkeleton />;
 
-    const clockIcon = (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-    );
-
-    const addUserIcon = (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-        </svg>
-    );
-
-    const listIcon = (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-        </svg>
-    );
-
-    if (loading) {
-        return (
-            <div className="space-y-6">
-                <div>
-                    <div className="h-8 bg-slate-200 rounded w-48 animate-pulse mb-2"></div>
-                    <div className="h-4 bg-slate-200 rounded w-64 animate-pulse"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 animate-pulse">
-                            <div className="h-4 bg-slate-200 rounded w-24 mb-4"></div>
-                            <div className="h-8 bg-slate-200 rounded w-16 mb-2"></div>
-                            <div className="h-3 bg-slate-200 rounded w-12"></div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
@@ -232,19 +216,19 @@ const AdminDashboard = () => {
                     title="Total Advisors"
                     value={stats.totalAdvisors}
                     change={2}
-                    icon={userIcon}
+                    icon={icons.user}
                 />
                 <StatCard
                     title="Total Reviewers"
                     value={stats.totalReviewers}
                     change={5}
-                    icon={userIcon}
+                    icon={icons.user}
                 />
                 <StatCard
                     title="Total Students"
                     value={stats.totalStudents}
                     change={10}
-                    icon={userIcon}
+                    icon={icons.user}
                 />
             </div>
 
@@ -254,17 +238,17 @@ const AdminDashboard = () => {
                     title="Total Reviews"
                     value={stats.totalReviews}
                     change={8}
-                    icon={reviewIcon}
+                    icon={icons.review}
                 />
                 <StatCard
                     title="Reviews Today"
                     value={stats.reviewsToday}
-                    icon={clockIcon}
+                    icon={icons.clock}
                 />
                 <StatCard
                     title="Pending Approvals"
                     value={stats.pendingApprovals}
-                    icon={reviewIcon}
+                    icon={icons.review}
                 />
             </div>
 
@@ -285,7 +269,7 @@ const AdminDashboard = () => {
                     </div>
                     <LineChart
                         data={reviewProgress}
-                        labels={periodFilter === "weekly" ? weekLabels : monthLabels}
+                        labels={periodFilter === "weekly" ? WEEK_LABELS : MONTH_LABELS}
                     />
                 </div>
 
@@ -296,7 +280,7 @@ const AdminDashboard = () => {
                     </div>
                     <BarChart
                         data={userGrowth}
-                        labels={monthLabels}
+                        labels={MONTH_LABELS}
                     />
                 </div>
             </div>
@@ -306,27 +290,27 @@ const AdminDashboard = () => {
                 <h3 className="font-semibold text-slate-900 mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <QuickActionButton
-                        icon={addUserIcon}
+                        icon={icons.addUser}
                         label="Add Advisor"
                         onClick={() => navigate("/admin/manage-users")}
                     />
                     <QuickActionButton
-                        icon={addUserIcon}
+                        icon={icons.addUser}
                         label="Add Reviewer"
                         onClick={() => navigate("/admin/manage-users")}
                     />
                     <QuickActionButton
-                        icon={addUserIcon}
+                        icon={icons.addUser}
                         label="Add Student"
                         onClick={() => navigate("/admin/manage-users")}
                     />
                     <QuickActionButton
-                        icon={listIcon}
+                        icon={icons.list}
                         label="View All Reviews"
                         onClick={() => navigate("/admin/review-status")}
                     />
                     <QuickActionButton
-                        icon={listIcon}
+                        icon={icons.list}
                         label="View Logs"
                         onClick={() => navigate("/admin/recent-activity")}
                     />

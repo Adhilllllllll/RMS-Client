@@ -37,11 +37,18 @@ const SkeletonMilestone = () => (
 );
 
 /* ============================================
-   Progress Chart Component
+   Progress Chart Component with Severity Colors
 ============================================ */
 const ProgressChart = React.memo(({ data }) => {
     const maxScore = 100;
     const chartHeight = 200;
+
+    // Get bar color based on severity
+    const getBarColor = (item) => {
+        if (item.severity === "green") return "from-green-500 to-green-400";
+        if (item.severity === "yellow") return "from-yellow-500 to-yellow-400";
+        return "from-red-500 to-red-400";
+    };
 
     if (!data || data.length === 0) {
         return (
@@ -53,14 +60,30 @@ const ProgressChart = React.memo(({ data }) => {
 
     return (
         <div className="relative">
+            {/* Legend */}
+            <div className="flex justify-end gap-4 mb-4 text-xs">
+                <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-green-500"></span> Excellent (≥80%)
+                </span>
+                <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-yellow-500"></span> Average (60-79%)
+                </span>
+                <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-red-500"></span> Needs Improvement (&lt;60%)
+                </span>
+            </div>
             {/* Chart Area */}
             <div className="flex items-end justify-between gap-4 h-48 pt-4">
                 {data.map((item, index) => (
-                    <div key={index} className="flex-1 flex flex-col items-center">
+                    <div key={index} className="flex-1 flex flex-col items-center group">
+                        {/* Score Label on Hover */}
+                        <div className="text-xs font-bold mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {item.score}%
+                        </div>
                         {/* Bar */}
                         <div className="w-full flex justify-center mb-2">
                             <div
-                                className="w-8 bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-lg transition-all duration-500"
+                                className={`w-10 bg-gradient-to-t ${getBarColor(item)} rounded-t-lg transition-all duration-500 hover:scale-105`}
                                 style={{
                                     height: `${(item.score / maxScore) * chartHeight}px`,
                                     minHeight: "8px",
@@ -83,10 +106,18 @@ const ProgressChart = React.memo(({ data }) => {
 });
 
 /* ============================================
-   Milestone Item Component
+   Milestone Item Component with Severity Colors
 ============================================ */
 const MilestoneItem = React.memo(({ milestone }) => {
-    const isCompleted = milestone.status === "completed";
+    const isCompleted = milestone.status === "completed" || milestone.status === "scored";
+    const hasScore = milestone.score !== null && milestone.score !== undefined;
+
+    // Get score badge color based on score (0-100 scale)
+    const getScoreColor = (score) => {
+        if (score >= 80) return "bg-green-100 text-green-700";
+        if (score >= 60) return "bg-yellow-100 text-yellow-700";
+        return "bg-red-100 text-red-700";
+    };
 
     const formatDate = useCallback((dateString) => {
         const date = new Date(dateString);
@@ -115,17 +146,27 @@ const MilestoneItem = React.memo(({ milestone }) => {
                 </svg>
             </div>
             <div className="flex-1">
-                <div className={`font-medium ${isCompleted ? "text-slate-900" : "text-slate-500"}`}>
-                    {milestone.title}
+                <div className="flex items-center gap-2">
+                    <span className={`font-medium ${isCompleted ? "text-slate-900" : "text-slate-500"}`}>
+                        {milestone.title}
+                    </span>
+                    {hasScore && (
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${getScoreColor(milestone.score)}`}>
+                            {milestone.score}%
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     {formatDate(milestone.date)}
+                    {milestone.reviewer && (
+                        <span className="text-slate-500">• {milestone.reviewer}</span>
+                    )}
                     {isCompleted && (
                         <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
-                            Completed
+                            {milestone.status === "scored" ? "Scored" : "Completed"}
                         </span>
                     )}
                 </div>

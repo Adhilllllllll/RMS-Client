@@ -92,7 +92,25 @@ const TaskRow = React.memo(({ task, onUpload, uploading }) => {
                     <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span className="font-medium text-slate-900">{task.title}</span>
+                    <div>
+                        <span className="font-medium text-slate-900">{task.title}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                            {task.category && (
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${task.category === "Coding" ? "bg-blue-100 text-blue-700" :
+                                        task.category === "Documentation" ? "bg-purple-100 text-purple-700" :
+                                            task.category === "Communication" ? "bg-orange-100 text-orange-700" :
+                                                task.category === "Research" ? "bg-cyan-100 text-cyan-700" :
+                                                    task.category === "Project" ? "bg-green-100 text-green-700" :
+                                                        "bg-slate-100 text-slate-700"
+                                    }`}>
+                                    {task.category}
+                                </span>
+                            )}
+                            {task.assignedBy && (
+                                <span className="text-xs text-slate-400">by {task.assignedBy}</span>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </td>
             <td className="px-6 py-4">
@@ -107,7 +125,17 @@ const TaskRow = React.memo(({ task, onUpload, uploading }) => {
                 <PriorityBadge priority={task.priority} />
             </td>
             <td className="px-6 py-4">
-                <StatusBadge status={task.status} />
+                <div className="flex flex-col gap-1">
+                    <StatusBadge status={task.status} />
+                    {task.hasFeedback && (
+                        <span className="text-xs text-green-600 flex items-center gap-1" title={task.feedback?.comment}>
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                            </svg>
+                            Feedback
+                        </span>
+                    )}
+                </div>
             </td>
             <td className="px-6 py-4">
                 <input
@@ -121,10 +149,10 @@ const TaskRow = React.memo(({ task, onUpload, uploading }) => {
                     onClick={handleUploadClick}
                     disabled={isCompleted || uploading}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isCompleted
-                            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                            : uploading
-                                ? "bg-orange-300 text-white cursor-wait"
-                                : "bg-orange-500 text-white hover:bg-orange-600"
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                        : uploading
+                            ? "bg-orange-300 text-white cursor-wait"
+                            : "bg-orange-500 text-white hover:bg-orange-600"
                         }`}
                 >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -188,8 +216,8 @@ const WorkshopRow = React.memo(({ workshop, onJoin, onViewMaterials, joining }) 
                         onClick={() => onJoin(workshop.id)}
                         disabled={joining}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${joining
-                                ? "bg-orange-300 text-white cursor-wait"
-                                : "bg-orange-500 text-white hover:bg-orange-600"
+                            ? "bg-orange-300 text-white cursor-wait"
+                            : "bg-orange-500 text-white hover:bg-orange-600"
                             }`}
                     >
                         {joining ? "Joining..." : "Join"}
