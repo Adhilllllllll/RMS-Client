@@ -97,22 +97,22 @@ const ReportModal = React.memo(({ report, onClose, loading }) => {
                                 <div className="grid grid-cols-3 gap-3">
                                     {/* Final Score */}
                                     <div className="bg-white rounded-lg p-3 text-center shadow-sm">
-                                        <div className={`text-2xl font-bold ${report.finalScore >= 6 ? "text-green-600" : "text-amber-600"}`}>
-                                            {report.finalScore ?? report.score ?? "—"}
+                                        <div className={`text-2xl font-bold ${(report.finalEvaluation?.finalScore ?? report.score ?? 0) >= 6 ? "text-green-600" : "text-amber-600"}`}>
+                                            {report.finalEvaluation?.finalScore ?? report.score ?? "—"}
                                         </div>
                                         <div className="text-xs text-slate-500 mt-1">Final Score</div>
                                     </div>
                                     {/* Attendance */}
                                     <div className="bg-white rounded-lg p-3 text-center shadow-sm">
-                                        <div className={`text-2xl font-bold ${(report.attendance ?? 0) >= 6 ? "text-green-600" : "text-amber-600"}`}>
-                                            {report.attendance ?? "—"}
+                                        <div className={`text-2xl font-bold ${(report.finalEvaluation?.attendance ?? 0) >= 6 ? "text-green-600" : "text-amber-600"}`}>
+                                            {report.finalEvaluation?.attendance ?? "—"}
                                         </div>
                                         <div className="text-xs text-slate-500 mt-1">Attendance</div>
                                     </div>
                                     {/* Discipline */}
                                     <div className="bg-white rounded-lg p-3 text-center shadow-sm">
-                                        <div className={`text-2xl font-bold ${(report.discipline ?? 0) >= 6 ? "text-green-600" : "text-amber-600"}`}>
-                                            {report.discipline ?? "—"}
+                                        <div className={`text-2xl font-bold ${(report.finalEvaluation?.discipline ?? 0) >= 6 ? "text-green-600" : "text-amber-600"}`}>
+                                            {report.finalEvaluation?.discipline ?? "—"}
                                         </div>
                                         <div className="text-xs text-slate-500 mt-1">Discipline</div>
                                     </div>
@@ -128,11 +128,11 @@ const ReportModal = React.memo(({ report, onClose, loading }) => {
                             </div>
 
                             {/* Final Remarks from Advisor */}
-                            {report.finalRemarks && (
+                            {report.finalEvaluation?.finalRemarks && (
                                 <div className="pt-2 border-t border-slate-200">
                                     <p className="text-xs text-slate-500 uppercase mb-2">Advisor Remarks</p>
                                     <p className="text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-lg">
-                                        {report.finalRemarks}
+                                        {report.finalEvaluation.finalRemarks}
                                     </p>
                                 </div>
                             )}

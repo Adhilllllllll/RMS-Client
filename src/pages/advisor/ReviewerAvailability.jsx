@@ -304,7 +304,12 @@ const ReviewerAvailability = () => {
                                             <div className="text-sm font-medium text-slate-700 mb-2">Upcoming Specific Dates</div>
                                             <div className="flex flex-wrap gap-2">
                                                 {reviewer.specificSlots
-                                                    .filter(slot => new Date(slot.specificDate) >= new Date())
+                                                    .filter(slot => {
+                                                        const slotDate = new Date(slot.specificDate);
+                                                        const today = new Date();
+                                                        today.setHours(0, 0, 0, 0);
+                                                        return slotDate >= today;
+                                                    })
                                                     .slice(0, 5)
                                                     .map((slot, i) => {
                                                         const date = new Date(slot.specificDate);
