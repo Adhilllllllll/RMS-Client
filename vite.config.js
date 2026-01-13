@@ -6,6 +6,8 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    port: 5173,
+    strictPort: true, // Fail if port 5173 is busy instead of auto-incrementing
     watch: {
       usePolling: true, // Fix for Windows OneDrive file watching issues
     },

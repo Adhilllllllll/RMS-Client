@@ -179,25 +179,17 @@ const AssignReviewModal = ({ isOpen, onClose, onSubmit, isLoading, preselectedRe
                         </select>
                     </div>
 
-                    {/* Reviewer Select */}
+                    {/* Reviewer - Read Only (auto-assigned from selected card) */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                            Reviewer <span className="text-red-500">*</span>
+                            Reviewer
                         </label>
-                        <select
-                            name="reviewerId"
-                            value={formData.reviewerId}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            disabled={isLoading}
-                        >
-                            <option value="">Select a reviewer</option>
-                            {reviewers.filter(r => r.status === "Available").map(reviewer => (
-                                <option key={reviewer.id} value={reviewer.id}>
-                                    {reviewer.name} ({reviewer.title})
-                                </option>
-                            ))}
-                        </select>
+                        <div className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-700">
+                            {preselectedReviewer?.name || "No reviewer selected"}
+                            {preselectedReviewer?.title && (
+                                <span className="text-slate-500 ml-1">({preselectedReviewer.title})</span>
+                            )}
+                        </div>
                     </div>
 
                     {/* Week Number */}
@@ -243,7 +235,7 @@ const AssignReviewModal = ({ isOpen, onClose, onSubmit, isLoading, preselectedRe
                                 </div>
                             ) : !formData.reviewerId || !formData.date ? (
                                 <div className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-400 text-sm">
-                                    Select reviewer & date first
+                                    Select date first
                                 </div>
                             ) : availableSlots.length === 0 ? (
                                 <div className="w-full px-4 py-2.5 border border-amber-200 rounded-lg bg-amber-50 text-amber-600 text-sm">
@@ -267,8 +259,14 @@ const AssignReviewModal = ({ isOpen, onClose, onSubmit, isLoading, preselectedRe
                                             return `${hour % 12 || 12}:${m} ${ampm}`;
                                         };
                                         return (
-                                            <option key={slot._id} value={slot._id}>
+                                            <option
+                                                key={slot._id}
+                                                value={slot._id}
+                                                disabled={slot.isBooked}
+                                                style={slot.isBooked ? { color: '#dc2626' } : {}}
+                                            >
                                                 {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                                {slot.isBooked ? ' (Not Available)' : ''}
                                             </option>
                                         );
                                     })}
