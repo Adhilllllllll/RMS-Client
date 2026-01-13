@@ -39,6 +39,7 @@ import AdvisorProfile from "./pages/advisor/Profile";
 import AdvisorChat from "./pages/advisor/Chat";
 import AdvisorIssues from "./pages/advisor/Issues";
 import AdvisorTasks from "./pages/advisor/Tasks";
+import ReviewRoom from "./pages/shared/ReviewRoom";
 import { useSelector, useDispatch } from "react-redux";
 import { refreshUser } from "./features/auth/authSlice";
 import { initializeSocket, disconnectSocket } from "./socket/socketClient";
@@ -453,6 +454,18 @@ function App() {
               <Layout>
                 <AdvisorProfile />
               </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* SHARED - REVIEW ROOM */}
+        {/* Accessible by all authenticated users (reviewer, student, advisor) */}
+        {/* Future: WebRTC + Socket.IO video call interface */}
+        <Route
+          path="/review-room/:reviewId"
+          element={
+            <ProtectedRoute role={["reviewer", "student", "advisor"]}>
+              <ReviewRoom />
             </ProtectedRoute>
           }
         />

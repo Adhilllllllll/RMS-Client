@@ -209,12 +209,19 @@ const Reviews = () => {
         return name.split(" ").map(n => n.charAt(0)).join("").toUpperCase().slice(0, 2);
     }, []);
 
-    // Handle join session
+    // Handle join session - uses meetingLink (format: /review-room/{reviewId})
     const handleJoinSession = useCallback((review) => {
         if (review.meetingLink) {
-            window.open(review.meetingLink, "_blank");
+            // Internal route - use navigate for SPA routing
+            if (review.meetingLink.startsWith('/review-room/')) {
+                navigate(review.meetingLink);
+            } else {
+                // External link (legacy or future external providers)
+                window.open(review.meetingLink, "_blank");
+            }
         } else {
-            navigate(`/student/session?id=${review._id}`);
+            // Fallback for reviews without meetingLink
+            navigate(`/review-room/${review._id}`);
         }
     }, [navigate]);
 

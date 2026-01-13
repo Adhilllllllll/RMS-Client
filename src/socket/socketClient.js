@@ -6,12 +6,17 @@ let socket = null;
 // Server URL
 const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// Development-only logging
+const isDev = import.meta.env.DEV;
+const log = (...args) => isDev && console.log(...args);
+const logError = (...args) => console.error(...args); // Keep errors in production
+
 /**
  * Initialize socket connection with JWT token
  */
 export const initializeSocket = (token) => {
     if (socket?.connected) {
-        console.log("Socket already connected");
+        log("Socket already connected");
         return socket;
     }
 
@@ -25,20 +30,20 @@ export const initializeSocket = (token) => {
 
     // Connection events
     socket.on("connect", () => {
-        console.log("🔌 Socket connected:", socket.id);
+        log("🔌 Socket connected:", socket.id);
     });
 
     socket.on("disconnect", (reason) => {
-        console.log("❌ Socket disconnected:", reason);
+        log("❌ Socket disconnected:", reason);
     });
 
     socket.on("connect_error", (error) => {
-        console.error("Socket connection error:", error.message);
+        logError("Socket connection error:", error.message);
     });
 
     // ========== NOTIFICATION EVENTS ==========
     socket.on("notification:new", (notification) => {
-        console.log("🔔 New notification:", notification);
+        log("🔔 New notification:", notification);
         // Dispatch to Redux or handle in component
         window.dispatchEvent(
             new CustomEvent("socket:notification", { detail: notification })
@@ -46,7 +51,7 @@ export const initializeSocket = (token) => {
     });
 
     socket.on("notification:pending", ({ count, notifications }) => {
-        console.log(`📬 ${count} pending notifications`);
+        log(`📬 ${count} pending notifications`);
         window.dispatchEvent(
             new CustomEvent("socket:pendingNotifications", { detail: notifications })
         );
@@ -54,14 +59,14 @@ export const initializeSocket = (token) => {
 
     // ========== CHAT EVENTS ==========
     socket.on("chat:receive", (message) => {
-        console.log("💬 New message:", message);
+        log("💬 New message:", message);
         window.dispatchEvent(
             new CustomEvent("socket:chatMessage", { detail: message })
         );
     });
 
     socket.on("chat:newMessage", ({ conversationId, message }) => {
-        console.log("📨 New conversation message:", conversationId);
+        log("📨 New conversation message:", conversationId);
         window.dispatchEvent(
             new CustomEvent("socket:newConversationMessage", {
                 detail: { conversationId, message },
@@ -70,19 +75,19 @@ export const initializeSocket = (token) => {
     });
 
     socket.on("chat:error", ({ message }) => {
-        console.error("Chat error:", message);
+        logError("Chat error:", message);
     });
 
     // ========== REVIEW CHAT EVENTS ==========
     socket.on("reviewChat:receive", (message) => {
-        console.log("📋 Review chat message:", message);
+        log("📋 Review chat message:", message);
         window.dispatchEvent(
             new CustomEvent("socket:reviewChatMessage", { detail: message })
         );
     });
 
     socket.on("reviewChat:newMessage", ({ reviewSessionId, message }) => {
-        console.log("📋 New review message:", reviewSessionId);
+        log("📋 New review message:", reviewSessionId);
         window.dispatchEvent(
             new CustomEvent("socket:newReviewMessage", {
                 detail: { reviewSessionId, message },
@@ -105,7 +110,7 @@ export const disconnectSocket = () => {
     if (socket) {
         socket.disconnect();
         socket = null;
-        console.log("Socket disconnected manually");
+        log("Socket disconnected manually");
     }
 };
 

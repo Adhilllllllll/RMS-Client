@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../features/auth/authSlice";
 import { APP_NAME } from "../constants/appConfig";
+import Avatar from "./Avatar";
 
 const Layout = ({ children }) => {
     const navigate = useNavigate();
@@ -175,17 +176,13 @@ const Layout = ({ children }) => {
                             </div>
                             <button
                                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                                className="h-9 w-9 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm hover:ring-2 hover:ring-amber-300 transition-all cursor-pointer overflow-hidden"
+                                className="hover:ring-2 hover:ring-amber-300 transition-all cursor-pointer rounded-full"
                             >
-                                {user?.avatar ? (
-                                    <img
-                                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${user.avatar}`}
-                                        alt={user?.name}
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    user?.name?.charAt(0) || "U"
-                                )}
+                                <Avatar
+                                    src={user?.avatar}
+                                    name={user?.name}
+                                    size="sm"
+                                />
                             </button>
 
                             {/* Profile Dropdown */}

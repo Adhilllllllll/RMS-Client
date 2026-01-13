@@ -127,8 +127,16 @@ const ReviewerDashboard = () => {
     };
 
     // Handle join review session
-    const handleJoin = (reviewId) => {
-        navigate(`/reviewer/session?id=${reviewId}`);
+    // For online reviews, navigates to /review-room/{reviewId} (video call)
+    // For offline or fallback, navigates to session page
+    const handleJoin = (review) => {
+        if (review.mode === "online" && review.meetingLink) {
+            // Use meetingLink route (format: /review-room/{reviewId})
+            navigate(review.meetingLink);
+        } else {
+            // Offline mode or fallback - go to session page
+            navigate(`/reviewer/session?id=${review._id}`);
+        }
     };
 
     // Handle submit feedback
@@ -219,8 +227,8 @@ const ReviewerDashboard = () => {
                         <div className="flex items-center gap-3">
                             <span className="text-sm text-slate-600">Status:</span>
                             <span className={`px-3 py-1 rounded-full text-sm font-medium ${reviewerStatus === 'available' ? 'bg-green-100 text-green-700' :
-                                    reviewerStatus === 'busy' ? 'bg-yellow-100 text-yellow-700' :
-                                        reviewerStatus === 'dnd' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
+                                reviewerStatus === 'busy' ? 'bg-yellow-100 text-yellow-700' :
+                                    reviewerStatus === 'dnd' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
                                 }`}>
                                 {reviewerStatus === 'available' ? '🟢 Available' :
                                     reviewerStatus === 'busy' ? '🟡 Busy' :
@@ -309,7 +317,7 @@ const ReviewerDashboard = () => {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => handleJoin(review._id)}
+                                        onClick={() => handleJoin(review)}
                                         className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
                                     >
                                         Join

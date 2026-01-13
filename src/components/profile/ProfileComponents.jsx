@@ -1,4 +1,5 @@
 import React from "react";
+import { getAvatarUrl } from "../../utils/getAvatarUrl";
 
 /* ============================================
    PROFILE AVATAR
@@ -22,12 +23,21 @@ export const ProfileAvatar = React.memo(({ name, avatar, size = "lg", className 
         xl: "w-20 h-20 text-2xl",
     };
 
-    if (avatar) {
+    // Use shared utility for URL construction
+    const avatarUrl = getAvatarUrl(avatar, name);
+    const initials = getInitials(name);
+
+    // State to track if image failed to load
+    const [imgError, setImgError] = React.useState(false);
+
+    // Check if we have a valid URL (not just a placeholder for display)
+    if (avatar && !imgError) {
         return (
             <img
-                src={avatar}
+                src={avatarUrl}
                 alt={name || "Profile"}
                 className={`rounded-full object-cover ${sizeClasses[size]} ${className}`}
+                onError={() => setImgError(true)}
             />
         );
     }
@@ -36,7 +46,7 @@ export const ProfileAvatar = React.memo(({ name, avatar, size = "lg", className 
         <div
             className={`rounded-full bg-orange-500 text-white flex items-center justify-center font-semibold ${sizeClasses[size]} ${className}`}
         >
-            {getInitials(name)}
+            {initials}
         </div>
     );
 });
@@ -191,8 +201,8 @@ export const FileUploadBox = React.memo(({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${isDragging
-                    ? "border-orange-400 bg-orange-50"
-                    : "border-slate-200 hover:border-slate-300"
+                ? "border-orange-400 bg-orange-50"
+                : "border-slate-200 hover:border-slate-300"
                 }`}
             onClick={handleClick}
         >

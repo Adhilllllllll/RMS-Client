@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import CreateUserModal from "../../components/CreateUserModal";
 import api from "../../api/axios";
+import Avatar from "../../components/Avatar";
 
 /* ======================================================
    MEMOIZED SUB-COMPONENTS
+   Last Updated: 2026-01-12 12:50 - Force Vite recompile
 ====================================================== */
 
 // Memoized user row to prevent re-renders
-const UserRow = memo(({ user, onView, onEdit, onDelete, getAvatarUrl }) => (
+const UserRow = memo(({ user, onView, onEdit, onDelete }) => (
     <tr className="hover:bg-slate-50">
         <td className="px-6 py-4 flex items-center gap-3">
-            <img src={getAvatarUrl(user)} alt="" className="w-8 h-8 rounded-full bg-slate-200" />
+            <Avatar src={user.avatar} name={user.name} size="sm" />
             <div>
                 <div className="font-medium text-slate-900 text-sm">{user.name}</div>
                 <div className="text-xs text-slate-500 capitalize">{user.role}</div>
@@ -107,12 +109,6 @@ const ManageUsers = () => {
     }, []);
     const handleDelete = useCallback((user) => setDeleteModal({ open: true, user }), []);
 
-    // Memoized avatar URL generator
-    const getAvatarUrl = useCallback((user) => {
-        if (user.avatar) return user.avatar;
-        return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
-    }, []);
-
     // Toggle status handler
     const handleToggleStatus = useCallback(async (user) => {
         try {
@@ -175,10 +171,10 @@ const ManageUsers = () => {
                         <h3 className="text-lg font-semibold text-slate-900 mb-4">User Details</h3>
                         <div className="space-y-3">
                             <div className="flex items-center gap-4 mb-4">
-                                <img
-                                    src={getAvatarUrl(viewModal.user)}
-                                    alt=""
-                                    className="w-16 h-16 rounded-full bg-slate-200"
+                                <Avatar
+                                    src={viewModal.user.avatar}
+                                    name={viewModal.user.name}
+                                    size="xl"
                                 />
                                 <div>
                                     <div className="font-medium text-slate-900">{viewModal.user.name}</div>
@@ -377,11 +373,7 @@ const ManageUsers = () => {
                                 {filteredUsers.map((user) => (
                                     <tr key={user._id} className="hover:bg-slate-50">
                                         <td className="px-6 py-4 flex items-center gap-3">
-                                            <img
-                                                src={getAvatarUrl(user)}
-                                                alt=""
-                                                className="w-8 h-8 rounded-full bg-slate-200"
-                                            />
+                                            <Avatar src={user.avatar} name={user.name} size="sm" />
                                             <div>
                                                 <div className="font-medium text-slate-900 text-sm">{user.name}</div>
                                                 <div className="text-xs text-slate-500 capitalize">{user.role}</div>

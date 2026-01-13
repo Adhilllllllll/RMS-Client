@@ -42,6 +42,7 @@ const ReviewerAvailability = () => {
     const [assignModal, setAssignModal] = useState({ open: false, reviewer: null });
     const [assignLoading, setAssignLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
 
     // Date-specific availability state
     const [selectedDate, setSelectedDate] = useState("");
@@ -58,6 +59,13 @@ const ReviewerAvailability = () => {
             return () => clearTimeout(timer);
         }
     }, [successMessage]);
+
+    useEffect(() => {
+        if (errorMessage) {
+            const timer = setTimeout(() => setErrorMessage(""), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [errorMessage]);
 
     // Fetch date-specific availability when date changes
     useEffect(() => {
@@ -114,6 +122,7 @@ const ReviewerAvailability = () => {
 
     const handleAssignReview = async (data) => {
         setAssignLoading(true);
+        setErrorMessage("");
         try {
             await api.post("/reviews", data);
             setSuccessMessage("Review assigned successfully!");
@@ -122,6 +131,8 @@ const ReviewerAvailability = () => {
             dispatch(fetchAdvisorReviews());
         } catch (err) {
             console.error("Assign review error:", err);
+            const message = err.response?.data?.message || "Failed to assign review. Please try again.";
+            setErrorMessage(message);
         } finally {
             setAssignLoading(false);
         }
@@ -149,6 +160,16 @@ const ReviewerAvailability = () => {
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                     {error}
+                </div>
+            )}
+
+            {/* API Error Message */}
+            {errorMessage && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {errorMessage}
                 </div>
             )}
 

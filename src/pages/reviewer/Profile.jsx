@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { updateUser } from "../../features/auth/authSlice";
 import api from "../../api/axios";
+import { getAvatarUrl } from "../../utils/getAvatarUrl";
 import {
     getMyReviewerProfile,
     updateMyReviewerProfile,
@@ -70,7 +71,7 @@ const Profile = () => {
                 avatar: reviewer.avatar || "",
             });
             if (reviewer.avatar) {
-                setAvatarPreview(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${reviewer.avatar}`);
+                setAvatarPreview(getAvatarUrl(reviewer.avatar));
             }
         } catch (err) {
             setErrorMsg("Failed to load profile");
@@ -155,8 +156,8 @@ const Profile = () => {
                 if (avatarPreview && avatarPreview.startsWith("blob:")) {
                     URL.revokeObjectURL(avatarPreview);
                 }
-                const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-                setAvatarPreview(`${baseUrl}${res.data.reviewer.avatar}`);
+                // Set permanent URL from backend
+                setAvatarPreview(getAvatarUrl(res.data.reviewer.avatar));
                 setProfile((prev) => ({ ...prev, avatar: res.data.reviewer.avatar }));
             }
 

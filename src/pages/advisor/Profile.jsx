@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../features/auth/authSlice";
 import api from "../../api/axios";
+import { getAvatarUrl } from "../../utils/getAvatarUrl";
 
 const Profile = () => {
     const { user } = useSelector((state) => state.auth);
@@ -60,7 +61,7 @@ const Profile = () => {
                 avatar: advisor.avatar || "",
             });
             if (advisor.avatar) {
-                setAvatarPreview(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${advisor.avatar}`);
+                setAvatarPreview(getAvatarUrl(advisor.avatar));
             }
         } catch (err) {
             setErrorMsg("Failed to load profile");
@@ -135,8 +136,7 @@ const Profile = () => {
                     URL.revokeObjectURL(avatarPreview);
                 }
                 // Set permanent URL from backend
-                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-                setAvatarPreview(`${baseUrl}${res.data.advisor.avatar}`);
+                setAvatarPreview(getAvatarUrl(res.data.advisor.avatar));
                 setProfile(prev => ({ ...prev, avatar: res.data.advisor.avatar }));
             }
 
