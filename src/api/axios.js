@@ -8,6 +8,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 /* ======================================================
@@ -20,17 +21,20 @@ const DEFAULT_CACHE_TTL = 30 * 1000; // 30 seconds
 
 // Cacheable GET endpoints (short TTL for frequently changing data)
 const CACHE_CONFIG = {
-  "/students/dashboard": 60 * 1000,      // 1 minute
-  "/reviews/advisor/me": 30 * 1000,       // 30 seconds
-  "/reviews/reviewer/me": 30 * 1000,      // 30 seconds
-  "/admin/dashboard-counts": 60 * 1000,   // 1 minute
-  "/notifications": 10 * 1000,            // 10 seconds
-  "/availability/me": 30 * 1000,          // 30 seconds
+  "/students/dashboard": 60 * 1000, // 1 minute
+  "/reviews/advisor/me": 30 * 1000, // 30 seconds
+  "/reviews/reviewer/me": 30 * 1000, // 30 seconds
+  "/admin/dashboard-counts": 60 * 1000, // 1 minute
+  "/notifications": 10 * 1000, // 10 seconds
+  "/availability/me": 30 * 1000, // 30 seconds
 };
 
 // Generate cache key from URL and params
 const getCacheKey = (url, params = {}) => {
-  const sortedParams = Object.keys(params).sort().map(k => `${k}=${params[k]}`).join("&");
+  const sortedParams = Object.keys(params)
+    .sort()
+    .map((k) => `${k}=${params[k]}`)
+    .join("&");
   return `${url}?${sortedParams}`;
 };
 
@@ -73,7 +77,7 @@ const clearRelatedCache = (url) => {
 
   for (const [pattern, endpoints] of Object.entries(clearPatterns)) {
     if (url.includes(pattern)) {
-      endpoints.forEach(ep => clearCache(ep));
+      endpoints.forEach((ep) => clearCache(ep));
       break;
     }
   }
@@ -101,7 +105,7 @@ api.interceptors.request.use(
           return Promise.reject({
             __CACHED__: true,
             data: cachedData,
-            config
+            config,
           });
         }
         // Store cache key in config for later
