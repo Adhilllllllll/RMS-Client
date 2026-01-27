@@ -89,7 +89,7 @@ const Students = () => {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {students.map((student) => (
-                                <tr key={student.id} className="hover:bg-slate-50 transition-colors">
+                                <tr key={student._id} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-sm">
@@ -101,10 +101,10 @@ const Students = () => {
                                     <td className="px-6 py-4 text-slate-500">{student.email}</td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${student.status === 'Active'
-                                                ? 'bg-green-100 text-green-700'
-                                                : student.status === 'Review'
-                                                    ? 'bg-blue-100 text-blue-700'
-                                                    : 'bg-amber-100 text-amber-700'
+                                            ? 'bg-green-100 text-green-700'
+                                            : student.status === 'Review'
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : 'bg-amber-100 text-amber-700'
                                             }`}>
                                             {student.status}
                                         </span>
@@ -114,7 +114,7 @@ const Students = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <button
-                                            onClick={() => handleViewProfile(student.id)}
+                                            onClick={() => handleViewProfile(student._id)}
                                             className="text-sm text-green-600 hover:text-green-800 font-medium hover:underline transition-colors"
                                         >
                                             View Profile

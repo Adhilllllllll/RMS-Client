@@ -161,7 +161,7 @@ const CreateTaskModal = ({ isOpen, onClose, students, onTaskCreated }) => {
                         <div className="border border-slate-200 rounded-lg max-h-32 overflow-y-auto">
                             {students.map(student => (
                                 <label
-                                    key={student.id}
+                                    key={student._id}
                                     className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 cursor-pointer"
                                 >
                                     <input
@@ -570,7 +570,7 @@ const Tasks = () => {
                 >
                     <option value="">All Students</option>
                     {students.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
+                        <option key={s._id} value={s.i_d}>{s.name}</option>
                     ))}
                 </select>
             </div>

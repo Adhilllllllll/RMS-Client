@@ -18,7 +18,11 @@ export const fetchDashboardStats = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const res = await getDashboardStats();
-      return res.data?.stats ?? ANALYTICS;
+     if (process.env.NODE_ENV === "development") {
+  return ANALYTICS;
+}
+throw err;
+
     } catch (err) {
       // TODO: Replace with real API when backend ready
       console.warn("Using mock dashboard data:", err?.message);
@@ -175,7 +179,7 @@ const advisorSlice = createSlice({
       /* ---------- APPROVE SCORE ---------- */
       .addCase(approveScore.fulfilled, (state, action) => {
         // Remove approved review from pending list
-        state.reviews = state.reviews.filter(r => r.id !== action.payload);
+        state.reviews = state.reviews.filter(r => r._id !== action.payload);
         state.stats.pendingScores = Math.max(0, state.stats.pendingScores - 1);
       })
 

@@ -77,7 +77,7 @@ const Notes = () => {
     const handleEditNote = (note) => {
         setEditingNote(note);
         setNoteForm({
-            studentId: note.studentId?._id || "",
+            studentId: note.studentId?.id || note.studentId?._id || "",
             title: note.title,
             content: note.content,
         });
@@ -120,7 +120,7 @@ const Notes = () => {
                         >
                             <option value="">Select a student...</option>
                             {students.map((s) => (
-                                <option key={s._id} value={s._id}>{s.name}</option>
+                                <option key={s._id || s._id} value={s.id || s._id}>{s.name}</option>
                             ))}
                         </select>
                     </div>

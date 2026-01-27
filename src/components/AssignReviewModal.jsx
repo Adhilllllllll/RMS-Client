@@ -28,13 +28,13 @@ const AssignReviewModal = ({ isOpen, onClose, onSubmit, isLoading, preselectedRe
         if (isOpen) {
             dispatch(fetchAssignedStudents());
             if (preselectedReviewer) {
-                setFormData(prev => ({ ...prev, reviewerId: preselectedReviewer.id }));
+                setFormData(prev => ({ ...prev, reviewerId: preselectedReviewer._id }));
             }
         }
         if (!isOpen) {
             setFormData({
                 studentId: "",
-                reviewerId: preselectedReviewer?.id || "",
+                reviewerId: preselectedReviewer?._id || "",
                 date: "",
                 slotId: "",
                 time: "",
@@ -172,7 +172,7 @@ const AssignReviewModal = ({ isOpen, onClose, onSubmit, isLoading, preselectedRe
                         >
                             <option value="">Select a student</option>
                             {students.map(student => (
-                                <option key={student.id} value={student.id}>
+                                <option key={student.id} value={student._id}>
                                     {student.name}
                                 </option>
                             ))}
