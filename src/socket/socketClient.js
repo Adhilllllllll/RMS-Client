@@ -78,6 +78,16 @@ export const initializeSocket = (token) => {
         logError("Chat error:", message);
     });
 
+    // === INSTAGRAM-STYLE: Unread count update ===
+    socket.on("chat:unread_update", ({ conversationId, unreadCount }) => {
+        log("🔔 Unread count update:", conversationId, unreadCount);
+        window.dispatchEvent(
+            new CustomEvent("socket:unreadUpdate", {
+                detail: { conversationId, unreadCount },
+            })
+        );
+    });
+
     // ========== REVIEW CHAT EVENTS ==========
     socket.on("reviewChat:receive", (message) => {
         log("📋 Review chat message:", message);
