@@ -1,6 +1,8 @@
 import React, { useState, memo } from 'react';
 import { getAvatarUrl } from '../utils/getAvatarUrl';
 
+ 
+
 /**
  * Production-ready Avatar component with Cloudinary optimizations
  * 
@@ -11,6 +13,7 @@ import { getAvatarUrl } from '../utils/getAvatarUrl';
  * - Optional Cloudinary transformations
  * - Initials fallback when no avatar
  */
+
 const Avatar = memo(({
     src,
     name = '',

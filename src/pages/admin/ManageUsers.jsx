@@ -3,12 +3,15 @@ import CreateUserModal from "../../components/CreateUserModal";
 import api from "../../api/axios";
 import Avatar from "../../components/Avatar";
 
+ 
 /* ======================================================
    MEMOIZED SUB-COMPONENTS
    Last Updated: 2026-01-12 12:50 - Force Vite recompile
 ====================================================== */
 
 // Memoized user row to prevent re-renders
+
+
 const UserRow = memo(({ user, onView, onEdit, onDelete }) => (
     <tr className="hover:bg-slate-50">
         <td className="px-6 py-4 flex items-center gap-3">
