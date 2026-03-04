@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import  React, { useState, useEffect } from "react";
 import api from "../../api/axios";
 
 const RecentActivity = () => {
@@ -20,6 +20,8 @@ const RecentActivity = () => {
             setLoading(false);
         }
     };
+
+
 
     const getActivityColor = (type) => {
         switch (type) {
@@ -80,4 +82,8 @@ const RecentActivity = () => {
     );
 };
 
+
+
 export default RecentActivity;
+
+//complet
